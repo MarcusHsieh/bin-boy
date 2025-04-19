@@ -1,0 +1,31 @@
+# ROS build artifacts
+build/
+install/
+log/
+
+# Python build artifacts and caches
+*.pyc
+__pycache__/
+*.egg-info/
+dist/
+*.so
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*~
+*.bak
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# Other common temporary files
+*.log
+*.orig
+
+# Specific to this project (if any)
+# e.g., esp32_firmware/.pio/
+esp32_firmware/.pio/
+esp32_firmware/.vscode/
