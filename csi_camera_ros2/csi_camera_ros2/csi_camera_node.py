@@ -11,11 +11,10 @@ def gstreamer_pipeline(sensor_id=0, sensor_mode=0, capture_width=1920, capture_h
     pipeline = (
         f"nvarguscamerasrc sensor-id={sensor_id} sensor-mode={sensor_mode} ! "
         f"video/x-raw(memory:NVMM),width={capture_width},height={capture_height},framerate={framerate}/1,format=NV12 ! "
+        # Use nvvidconv to convert directly to BGR, potentially skipping videoconvert
         "nvvidconv ! "
-        "video/x-raw,format=BGRx ! "
-        "videoconvert ! "
-        "video/x-raw,format=BGR ! "
-        "appsink drop=true"  # Added drop=true for potential performance improvement
+        "video/x-raw,format=BGR ! " # Request BGR output directly from nvvidconv
+        "appsink drop=true"
     )
     return pipeline
 
@@ -28,8 +27,9 @@ class CSICameraNode(Node):
         self.declare_parameter('sensor_mode', 0) # Using mode 0, but requesting lower resolution output
         self.declare_parameter('capture_width', 640)  # Default lowered further (VGA)
         self.declare_parameter('capture_height', 480) # Default lowered further (VGA)
-        self.declare_parameter('framerate', 30)       # Keep framerate at 30
-        self.declare_parameter('publish_rate', 30.0)  # Match framerate default
+        self.declare_parameter('framerate', 20)       # Default framerate
+        self.declare_parameter('publish_rate', 20.0)  # Default publish rate
+        self.declare_parameter('publish_compressed', True) # Add parameter to control compressed publishing
 
         # Get parameters
         self.sensor_id = self.get_parameter('sensor_id').get_parameter_value().integer_value
@@ -38,11 +38,16 @@ class CSICameraNode(Node):
         self.capture_height = self.get_parameter('capture_height').get_parameter_value().integer_value
         self.framerate = self.get_parameter('framerate').get_parameter_value().integer_value
         publish_rate = self.get_parameter('publish_rate').get_parameter_value().double_value
+        self.publish_compressed = self.get_parameter('publish_compressed').get_parameter_value().bool_value
 
         topic_name_raw = f'/csi_camera_{self.sensor_id}/image_raw'
-        topic_name_compressed = f'{topic_name_raw}/compressed'
         self.image_pub_raw = self.create_publisher(Image, topic_name_raw, 10)
-        self.image_pub_compressed = self.create_publisher(CompressedImage, topic_name_compressed, 10)
+        self.image_pub_compressed = None
+        log_message = f"Started camera node for sensor ID {self.sensor_id}. Publishing Raw: {topic_name_raw}"
+        if self.publish_compressed:
+            topic_name_compressed = f'{topic_name_raw}/compressed'
+            self.image_pub_compressed = self.create_publisher(CompressedImage, topic_name_compressed, 10)
+            log_message += f", Compressed: {topic_name_compressed}"
         self.bridge = CvBridge()
 
         self.pipeline = gstreamer_pipeline(
@@ -62,7 +67,7 @@ class CSICameraNode(Node):
             return
 
         self.timer = self.create_timer(1.0 / publish_rate, self.timer_callback)
-        self.get_logger().info(f"Started camera node for sensor ID {self.sensor_id}. Raw: {topic_name_raw}, Compressed: {topic_name_compressed}")
+        self.get_logger().info(log_message) # Use the constructed log message
 
     def timer_callback(self):
         ret, frame = self.cap.read()
@@ -81,13 +86,16 @@ class CSICameraNode(Node):
         image_msg_raw.header.frame_id = frame_id
         self.image_pub_raw.publish(image_msg_raw)
 
-        # Publish compressed image
-        compressed_msg = CompressedImage()
-        compressed_msg.header.stamp = now
-        compressed_msg.header.frame_id = frame_id
-        compressed_msg.format = "jpeg"
-        compressed_msg.data = cv2.imencode('.jpg', frame)[1].tobytes()
-        self.image_pub_compressed.publish(compressed_msg)
+        # Publish compressed image only if enabled
+        if self.publish_compressed and self.image_pub_compressed:
+            compressed_msg = CompressedImage()
+            compressed_msg.header.stamp = now
+            compressed_msg.header.frame_id = frame_id
+            compressed_msg.format = "jpeg"
+            # Use imencode parameters for potential speedup (lower quality)
+            encode_param = [int(cv2.IMWRITE_JPEG_QUALITY), 90] # Quality 90 (0-100)
+            compressed_msg.data = cv2.imencode('.jpg', frame, encode_param)[1].tobytes()
+            self.image_pub_compressed.publish(compressed_msg)
 
     def destroy_node(self):
         self.get_logger().info("Shutting down camera node.")
