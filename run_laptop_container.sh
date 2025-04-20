@@ -22,10 +22,10 @@ docker run -it --rm \
     -e DISPLAY=$DISPLAY \
     -e QT_X11_NO_MITSHM=1 \
     -v /tmp/.X11-unix:/tmp/.X11-unix:rw \
-    --runtime nvidia \
-    --net=host \
+    --runtime nvidia
+    --net=host
     --ipc=host \
-    --privileged \
+    --privileged  \
     -v "${HOST_ROS2_WORKSPACE}:${CONTAINER_ROS2_WORKSPACE}" \
     "${IMAGE_NAME}:${TAG}" \
     /bin/bash -c " \
@@ -34,13 +34,15 @@ docker run -it --rm \
         source /opt/ros/foxy/setup.bash; \
         echo 'Changing to workspace: ${CONTAINER_ROS2_WORKSPACE}'; \
         cd ${CONTAINER_ROS2_WORKSPACE}; \
-        echo 'Building workspace (if source was mounted and not copied)...'; \
+        echo 'Attempting to build workspace (if needed)...'; \
         # Optional: Build the workspace inside the container if src was mounted
-        # colcon build --symlink-install; \
+        # Consider running this manually first if needed: colcon build --symlink-install; \
         echo 'Sourcing local workspace...'; \
-        if [ -f install/setup.bash ]; then source install/setup.bash; else echo 'Local setup.bash not found, maybe build first?'; fi; \
+        if [ -f install/setup.bash ]; then source install/setup.bash; else echo 'Local setup.bash not found. Build the workspace first inside the container (colcon build).'; fi; \
         echo '------------------------'; \
-        echo 'ros2 run motor_controller qt_joystick'; \
+        echo 'Starting bash shell. Run your ROS commands, e.g.:'; \
+        echo '  ros2 run motor_controller qt_joystick'; \
+        echo '------------------------'; \
         exec /bin/bash"
 
 echo "Docker container exited."
