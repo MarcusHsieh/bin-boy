@@ -104,13 +104,21 @@ class CSICameraNode(Node):
 
         self.timer = self.create_timer(1.0 / publish_rate, self.timer_callback)
         self.get_logger().info(log_message) # Use the constructed log message
+        self.frame_count = 0 # Add frame counter for debugging
 
     def timer_callback(self):
+        # self.get_logger().debug("Timer callback triggered.") # Optional: uncomment for very verbose logging (use --log-level debug)
         ret, frame = self.cap.read()
         if not ret:
-            self.get_logger().error(f"Error: Unable to read frame from camera with sensor ID {self.sensor_id}")
+            # Use warn level, as error might imply a crash, this might be recoverable or intermittent
+            self.get_logger().warn(f"cap.read() returned False. Unable to read frame from camera with sensor ID {self.sensor_id}")
             # Consider adding logic to attempt reconnection or shutdown
             return
+
+        # Log success only periodically to avoid spamming logs
+        if self.frame_count % 60 == 0: # Log roughly every 3 seconds at 20fps
+             self.get_logger().info(f"Successfully read frame {self.frame_count}.")
+        self.frame_count += 1
 
         # Prepare timestamp and frame_id
         now = self.get_clock().now().to_msg()
