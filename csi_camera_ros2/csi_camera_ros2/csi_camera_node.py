@@ -25,11 +25,11 @@ class CSICameraNode(Node):
 
         # Declare parameters
         self.declare_parameter('sensor_id', 0)
-        self.declare_parameter('sensor_mode', 0)
-        self.declare_parameter('capture_width', 1920)
-        self.declare_parameter('capture_height', 1080)
-        self.declare_parameter('framerate', 20)
-        self.declare_parameter('publish_rate', 20.0) # Hz
+        self.declare_parameter('sensor_mode', 0) # Consider mode 2 (1920x1080@30) or mode 6 (1280x720@60) if needed
+        self.declare_parameter('capture_width', 1280) # Default lowered
+        self.declare_parameter('capture_height', 720)  # Default lowered
+        self.declare_parameter('framerate', 30)       # Default adjusted
+        self.declare_parameter('publish_rate', 30.0)  # Match framerate default
 
         # Get parameters
         self.sensor_id = self.get_parameter('sensor_id').get_parameter_value().integer_value
