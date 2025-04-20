@@ -3,18 +3,18 @@
 import rclpy
 from rclpy.node import Node
 import cv2
-from sensor_msgs.msg import Image
-from cv_bridge import CvBridge, CvBridgeError
+import numpy as np # Import numpy
+from sensor_msgs.msg import CompressedImage # Change message type
+from cv_bridge import CvBridge, CvBridgeError # Keep CvBridge for potential future use, but not needed for compressed decoding
 
 class ImageViewerNode(Node):
     def __init__(self):
         super().__init__('image_viewer_node')
         self.bridge = CvBridge()
-        # Subscribe to the raw image topic published by csi_camera_node
-        # Using default reliable QoS for simplicity first
+        # Subscribe to the COMPRESSED image topic
         self.subscription = self.create_subscription(
-            Image,
-            '/csi_camera_0/image_raw/compressed', # Assuming default sensor_id=0
+            CompressedImage, # Change message type here
+            '/csi_camera_0/image_raw/compressed', # Correct topic
             self.image_callback,
             10) # Default QoS depth
         self.subscription  # prevent unused variable warning
@@ -23,12 +23,17 @@ class ImageViewerNode(Node):
         cv2.namedWindow(self.window_title, cv2.WINDOW_AUTOSIZE)
 
     def image_callback(self, msg):
-        # self.get_logger().debug('Received image') # Uncomment for verbose debugging
+        # self.get_logger().debug('Received compressed image') # Uncomment for verbose debugging
         try:
-            # Convert ROS Image message to OpenCV image
-            cv_image = self.bridge.imgmsg_to_cv2(msg, "bgr8")
-        except CvBridgeError as e:
-            self.get_logger().error(f'CV Bridge Error: {e}')
+            # Decode compressed image data
+            np_arr = np.frombuffer(msg.data, np.uint8)
+            cv_image = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
+        except Exception as e:
+            self.get_logger().error(f'Error decoding compressed image: {e}')
+            return
+
+        if cv_image is None:
+            self.get_logger().warn('Decoded image is None.')
             return
 
         # Display image
