@@ -29,8 +29,8 @@ class CSICameraNode(Node):
         self.declare_parameter('sensor_mode', 0) # Using mode 0, but requesting lower resolution output
         self.declare_parameter('capture_width', 640)  # Default lowered further (VGA)
         self.declare_parameter('capture_height', 480) # Default lowered further (VGA)
-        self.declare_parameter('framerate', 30)       # Camera capture framerate
-        self.declare_parameter('publish_rate', 30.0)  # Let's try 30Hz publish rate again with QoS changes
+        self.declare_parameter('framerate', 20)       # Revert framerate to 20fps (supported at VGA)
+        self.declare_parameter('publish_rate', 20.0)  # Match framerate
         self.declare_parameter('publish_compressed', True) # Publish compressed by default
 
         # Get parameters
