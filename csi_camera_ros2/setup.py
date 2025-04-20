@@ -10,8 +10,7 @@ setup(
         ('share/ament_index/resource_index/packages',
             ['resource/' + package_name]),
         ('share/' + package_name, ['package.xml']),
-        # Add launch directory installation
-        ('share/' + package_name + '/launch', ['launch/csi_camera_with_viewer.launch.py']),
+        # Removed launch directory installation
     ],
     install_requires=['setuptools'],
     zip_safe=True,
@@ -23,7 +22,7 @@ setup(
     entry_points={
         'console_scripts': [
             'csi_camera_node = csi_camera_ros2.csi_camera_node:main',
-            'image_viewer_node = csi_camera_ros2.image_viewer_node:main', # Add entry point for viewer
+            # Removed image_viewer_node entry point
         ],
     },
 )
