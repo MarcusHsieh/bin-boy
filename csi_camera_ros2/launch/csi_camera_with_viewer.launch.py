@@ -9,8 +9,8 @@ def generate_launch_description():
     container = ComposableNodeContainer(
             name='csi_camera_container',
             namespace='',
-            package='rclcpp_components', # Standard package for the container node
-            executable='component_container',
+            package='rclpy_components', # Use the rclpy container package
+            executable='component_container', # Executable name is the same
             composable_node_descriptions=[
                 # Camera Publisher Node
                 ComposableNode(
