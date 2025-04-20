@@ -21,6 +21,7 @@ setup(
     entry_points={
         'console_scripts': [
             'csi_camera_node = csi_camera_ros2.csi_camera_node:main',
+            'image_viewer_node = csi_camera_ros2.image_viewer_node:main', # Add entry point for viewer
         ],
     },
 )
