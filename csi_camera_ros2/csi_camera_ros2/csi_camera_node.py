@@ -41,7 +41,7 @@ class CSICameraNode(Node):
 
         # Declare parameters
         self.declare_parameter('sensor_id', 0)
-        self.declare_parameter('sensor_mode', 0) # Using mode 0
+        # self.declare_parameter('sensor_mode', 0) # Removed, not used in pipeline function
         self.declare_parameter('capture_width', 640)  # Default VGA
         self.declare_parameter('capture_height', 480) # Default VGA
         # Add display width/height params used in the pipeline function now
@@ -54,7 +54,7 @@ class CSICameraNode(Node):
 
         # Get parameters
         self.sensor_id = self.get_parameter('sensor_id').get_parameter_value().integer_value
-        self.sensor_mode = self.get_parameter('sensor_mode').get_parameter_value().integer_value
+        # self.sensor_mode = self.get_parameter('sensor_mode').get_parameter_value().integer_value # Removed
         self.capture_width = self.get_parameter('capture_width').get_parameter_value().integer_value
         self.capture_height = self.get_parameter('capture_height').get_parameter_value().integer_value
         # Get display width/height params
@@ -83,9 +83,9 @@ class CSICameraNode(Node):
         self.bridge = CvBridge()
 
         self.pipeline = gstreamer_pipeline(
-            # Pass all params to the pipeline function now
+            # Pass all params to the pipeline function now (excluding sensor_mode)
             sensor_id=self.sensor_id,
-            sensor_mode=self.sensor_mode,
+            # sensor_mode=self.sensor_mode, # Removed
             capture_width=self.capture_width,
             capture_height=self.capture_height,
             display_width=self.display_width,
