@@ -2,6 +2,7 @@
 
 import rclpy
 from rclpy.node import Node
+from rclpy.qos import QoSProfile, QoSReliabilityPolicy, QoSHistoryPolicy
 import cv2
 from sensor_msgs.msg import Image, CompressedImage
 from cv_bridge import CvBridge
@@ -29,7 +30,7 @@ class CSICameraNode(Node):
         self.declare_parameter('capture_width', 640)  # Default lowered further (VGA)
         self.declare_parameter('capture_height', 480) # Default lowered further (VGA)
         self.declare_parameter('framerate', 30)       # Camera capture framerate
-        self.declare_parameter('publish_rate', 1000.0)  # Lower default publish rate for smoother viewing
+        self.declare_parameter('publish_rate', 30.0)  # Let's try 30Hz publish rate again with QoS changes
         self.declare_parameter('publish_compressed', True) # Publish compressed by default
 
         # Get parameters
@@ -41,13 +42,20 @@ class CSICameraNode(Node):
         publish_rate = self.get_parameter('publish_rate').get_parameter_value().double_value
         self.publish_compressed = self.get_parameter('publish_compressed').get_parameter_value().bool_value
 
+        # Define a QoS profile: Best Effort, Depth 1
+        qos_profile = QoSProfile(
+            reliability=QoSReliabilityPolicy.BEST_EFFORT,
+            history=QoSHistoryPolicy.KEEP_LAST,
+            depth=1
+        )
+
         topic_name_raw = f'/csi_camera_{self.sensor_id}/image_raw'
-        self.image_pub_raw = self.create_publisher(Image, topic_name_raw, 10)
+        self.image_pub_raw = self.create_publisher(Image, topic_name_raw, qos_profile) # Use QoS profile
         self.image_pub_compressed = None
         log_message = f"Started camera node for sensor ID {self.sensor_id}. Publishing Raw: {topic_name_raw}"
         if self.publish_compressed:
             topic_name_compressed = f'{topic_name_raw}/compressed'
-            self.image_pub_compressed = self.create_publisher(CompressedImage, topic_name_compressed, 10)
+            self.image_pub_compressed = self.create_publisher(CompressedImage, topic_name_compressed, qos_profile) # Use QoS profile
             log_message += f", Compressed: {topic_name_compressed}"
         self.bridge = CvBridge()
 
