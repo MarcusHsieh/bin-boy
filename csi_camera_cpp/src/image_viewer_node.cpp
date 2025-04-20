@@ -41,22 +41,29 @@ void ImageViewerNode::image_callback(const sensor_msgs::msg::Image::ConstSharedP
 
         // Display image
         cv::imshow(window_name_, cv_ptr->image);
-        int key = cv::waitKey(1); // Use waitKey(1) for minimal delay
-
-        // Check if window was closed or 'q'/ESC pressed
-        if (cv::getWindowProperty(window_name_, cv::WND_PROP_VISIBLE) < 1 || (key != -1 && (key == 'q' || key == 27))) {
-             RCLCPP_INFO(this->get_logger(), "Close request received, shutting down viewer.");
-             cv::destroyWindow(window_name_);
-             // Signal main thread to exit or shutdown node cleanly
-             // For simplicity, we rely on Ctrl+C in the launch terminal for now
-             // Or could call rclcpp::shutdown();
-        }
 
     } catch (const cv_bridge::Exception& e) {
         RCLCPP_ERROR(this->get_logger(), "CV Bridge error: %s", e.what());
+        return; // Return on error before waitKey
     } catch (const cv::Exception& e) {
-        RCLCPP_ERROR(this->get_logger(), "OpenCV error: %s", e.what());
+        RCLCPP_ERROR(this->get_logger(), "OpenCV display/processing error: %s", e.what());
+        return; // Return on error before waitKey
     }
+
+    // Ensure waitKey is called *after* imshow and outside the main try block
+    int key = cv::waitKey(1); // Use waitKey(1) for minimal delay
+
+    // Check if window was closed or 'q'/ESC pressed
+    // Use getWindowProperty check first as waitKey might return -1 if no key is pressed
+    if (cv::getWindowProperty(window_name_, cv::WND_PROP_VISIBLE) < 1 || (key != -1 && (key == 'q' || key == 27))) {
+         RCLCPP_INFO(this->get_logger(), "Close request received, shutting down viewer.");
+         cv::destroyWindow(window_name_);
+         // Signal main thread to exit or shutdown node cleanly
+         // For simplicity, we rely on Ctrl+C in the launch terminal for now
+         // Or could call rclcpp::shutdown();
+         // Or potentially just stop the timer/subscription if the node should continue running
+    }
+    // Removed duplicated catch blocks
 }
 
 } // namespace csi_camera_cpp
