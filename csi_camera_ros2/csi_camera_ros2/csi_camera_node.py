@@ -3,8 +3,8 @@
 import rclpy
 from rclpy.node import Node
 import cv2
-from sensor_msgs.msg import Image
-from cv_bridge import CvBridge
+from sensor_msgs.msg import Image, CompressedImage # Import CompressedImage
+from cv_bridge import CvBridge, CvBridgeError # Import CvBridgeError
 import time # Import time for potential debugging delays
 
 # Pipeline function exactly from the working example script
@@ -49,6 +49,9 @@ class CSICameraNode(Node):
         self.declare_parameter('flip_method', 0)
         # Publish rate parameter - let's keep it matching framerate for now
         self.declare_parameter('publish_rate', 30.0)
+        # Add parameters to control publishing
+        self.declare_parameter('publish_raw', False) # Default OFF
+        self.declare_parameter('publish_compressed', True) # Default ON
 
         # Get parameters
         self.sensor_id = self.get_parameter('sensor_id').get_parameter_value().integer_value
@@ -59,11 +62,29 @@ class CSICameraNode(Node):
         self.framerate = self.get_parameter('framerate').get_parameter_value().integer_value
         self.flip_method = self.get_parameter('flip_method').get_parameter_value().integer_value
         publish_rate = self.get_parameter('publish_rate').get_parameter_value().double_value
+        # Get publishing control parameters
+        self.publish_raw = self.get_parameter('publish_raw').get_parameter_value().bool_value
+        self.publish_compressed = self.get_parameter('publish_compressed').get_parameter_value().bool_value
 
-        # Create raw image publisher (using default QoS)
-        topic_name_raw = f'/csi_camera_{self.sensor_id}/image_raw'
-        self.image_pub_raw = self.create_publisher(Image, topic_name_raw, 10) # Default QoS depth 10
         self.bridge = CvBridge()
+        self.image_pub_raw = None
+        self.image_pub_compressed = None
+        log_message_pubs = []
+
+        # Conditionally create raw publisher
+        if self.publish_raw:
+            topic_name_raw = f'/csi_camera_{self.sensor_id}/image_raw'
+            self.image_pub_raw = self.create_publisher(Image, topic_name_raw, 10) # Default QoS
+            log_message_pubs.append(f"Raw: {topic_name_raw}")
+
+        # Conditionally create compressed publisher
+        if self.publish_compressed:
+            topic_name_compressed = f'/csi_camera_{self.sensor_id}/image_raw/compressed' # Standard topic name
+            self.image_pub_compressed = self.create_publisher(CompressedImage, topic_name_compressed, 10) # Default QoS
+            log_message_pubs.append(f"Compressed: {topic_name_compressed}")
+
+        if not log_message_pubs:
+             self.get_logger().warn("Neither raw nor compressed publishing is enabled!")
 
         # Construct the pipeline
         self.pipeline = gstreamer_pipeline(
@@ -103,7 +124,11 @@ class CSICameraNode(Node):
         if publish_rate > 0:
              timer_period = 1.0 / publish_rate
              self.timer = self.create_timer(timer_period, self.timer_callback)
-             self.get_logger().info(f"Publishing images to {topic_name_raw} at {publish_rate} Hz")
+             if log_message_pubs:
+                 self.get_logger().info(f"Publishing ({', '.join(log_message_pubs)}) at {publish_rate} Hz")
+             else:
+                 # If no publishers are active, no need for the timer? Or keep it for frame reading? Let's keep it for now.
+                 self.get_logger().info(f"Timer active at {publish_rate} Hz, but no image publishers enabled.")
         else:
              self.get_logger().warn("Publish rate set to 0, images will not be published.")
 
@@ -121,16 +146,36 @@ class CSICameraNode(Node):
 
         # Log success periodically
         # if self.frame_count % 60 == 0: # Log roughly every 2 seconds at 30fps
-        #      self.get_logger().info(f"Successfully read frame {self.frame_count} (shape: {frame.shape}).")
-        # self.frame_count += 1
+             self.get_logger().info(f"Successfully read frame {self.frame_count} (shape: {frame.shape}).")
+        self.frame_count += 1
 
-        # Prepare and publish raw image
+        # Prepare timestamp and frame_id once
         now = self.get_clock().now().to_msg()
         frame_id = f"camera_{self.sensor_id}_frame"
-        image_msg_raw = self.bridge.cv2_to_imgmsg(frame, "bgr8")
-        image_msg_raw.header.stamp = now
-        image_msg_raw.header.frame_id = frame_id
-        self.image_pub_raw.publish(image_msg_raw)
+
+        # Conditionally publish raw image
+        if self.publish_raw and self.image_pub_raw:
+            try:
+                image_msg_raw = self.bridge.cv2_to_imgmsg(frame, "bgr8")
+                image_msg_raw.header.stamp = now
+                image_msg_raw.header.frame_id = frame_id
+                self.image_pub_raw.publish(image_msg_raw)
+            except CvBridgeError as e:
+                self.get_logger().error(f'CV Bridge Error (Raw): {e}')
+
+
+        # Conditionally publish compressed image
+        if self.publish_compressed and self.image_pub_compressed:
+            try:
+                compressed_msg = CompressedImage()
+                compressed_msg.header.stamp = now
+                compressed_msg.header.frame_id = frame_id
+                compressed_msg.format = "jpeg"
+                encode_param = [int(cv2.IMWRITE_JPEG_QUALITY), 90] # Quality 90
+                compressed_msg.data = cv2.imencode('.jpg', frame, encode_param)[1].tobytes()
+                self.image_pub_compressed.publish(compressed_msg)
+            except Exception as e: # Catch potential encoding errors too
+                 self.get_logger().error(f'Error compressing or publishing frame: {e}')
 
     def destroy_node(self):
         self.get_logger().info("Shutting down camera node.")
