@@ -15,7 +15,7 @@ def generate_launch_description():
                 # Camera Publisher Node
                 ComposableNode(
                     package='csi_camera_ros2',
-                    plugin='csi_camera_ros2.csi_camera_node.CSICameraNode', # Path to the class
+                    plugin='csi_camera_ros2.csi_camera_node:CSICameraNode', # Use colon separator
                     name='csi_camera_node',
                     parameters=[ # Pass default parameters explicitly if needed, or rely on node defaults
                         # Example: {'publish_raw': True, 'publish_compressed': False}
@@ -25,7 +25,7 @@ def generate_launch_description():
                 # Image Viewer Node
                 ComposableNode(
                     package='csi_camera_ros2',
-                    plugin='csi_camera_ros2.image_viewer_node.ImageViewerNode', # Path to the class
+                    plugin='csi_camera_ros2.image_viewer_node:ImageViewerNode', # Use colon separator
                     name='image_viewer_node',
                     # Remap if the viewer expects a different topic name (ours matches default)
                     # remappings=[('/image', '/csi_camera_0/image_raw')]
