@@ -14,7 +14,7 @@ endif()
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(rclcpp_components REQUIRED)
-find_package(image_transport REQUIRED)
+# find_package(image_transport REQUIRED) # Removed
 find_package(cv_bridge REQUIRED)
 find_package(sensor_msgs REQUIRED)
 find_package(OpenCV REQUIRED) # Find OpenCV
@@ -34,7 +34,7 @@ add_library(${PROJECT_NAME}_nodes SHARED
 target_link_libraries(${PROJECT_NAME}_nodes
   rclcpp::rclcpp # Use modern CMake target
   # rclcpp_components::rclcpp_components # Removed - registration handled by macro
-  ${image_transport_LIBRARIES} # Use library variable
+  # ${image_transport_LIBRARIES} # Removed
   ${cv_bridge_LIBRARIES} # Use library variable
   ${sensor_msgs_LIBRARIES} # Use library variable instead of target
   ${OpenCV_LIBRARIES} # Link OpenCV libraries

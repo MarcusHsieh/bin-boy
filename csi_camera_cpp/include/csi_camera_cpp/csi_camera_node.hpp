@@ -5,7 +5,7 @@
 #include <sensor_msgs/msg/image.hpp>
 #include <sensor_msgs/msg/camera_info.hpp>
 #include <cv_bridge/cv_bridge.h>
-#include <image_transport/image_transport.hpp>
+// #include <image_transport/image_transport.hpp> // Removed
 #include <opencv2/opencv.hpp>
 #include <string>
 #include <memory> // For std::shared_ptr
@@ -43,9 +43,10 @@ private:
 
     // --- ROS ---
     rclcpp::TimerBase::SharedPtr timer_;
-    // Use CameraPublisher to publish Image and CameraInfo together
-    image_transport::CameraPublisher camera_pub_;
-    sensor_msgs::msg::CameraInfo camera_info_msg_; // Store camera info
+    // Standard publishers for unique_ptr messages
+    rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr image_pub_;
+    rclcpp::Publisher<sensor_msgs::msg::CameraInfo>::SharedPtr info_pub_;
+    sensor_msgs::msg::CameraInfo camera_info_msg_; // Store camera info template
 
     // --- Methods ---
     void declare_parameters();
