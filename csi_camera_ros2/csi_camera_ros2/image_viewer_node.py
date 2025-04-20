@@ -14,11 +14,11 @@ class ImageViewerNode(Node):
         # Using default reliable QoS for simplicity first
         self.subscription = self.create_subscription(
             Image,
-            '/csi_camera_0/image_raw', # Assuming default sensor_id=0
+            '/csi_camera_0/image_raw/compressed', # Assuming default sensor_id=0
             self.image_callback,
             10) # Default QoS depth
         self.subscription  # prevent unused variable warning
-        self.get_logger().info("Image viewer node started, subscribing to /csi_camera_0/image_raw")
+        self.get_logger().info("Image viewer node started, subscribing to /csi_camera_0/image_raw/compressed")
         self.window_title = "ROS Image Viewer"
         cv2.namedWindow(self.window_title, cv2.WINDOW_AUTOSIZE)
 
