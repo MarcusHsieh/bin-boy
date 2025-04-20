@@ -7,18 +7,33 @@ import cv2
 from sensor_msgs.msg import Image, CompressedImage
 from cv_bridge import CvBridge
 
-def gstreamer_pipeline(sensor_id=0, sensor_mode=0, capture_width=1920, capture_height=1080, framerate=30): # Default framerate 30
-    """Constructs the GStreamer pipeline string, matching the example."""
-    pipeline = (
-        f"nvarguscamerasrc sensor-id={sensor_id} sensor-mode={sensor_mode} ! "
-        f"video/x-raw(memory:NVMM), width=(int){capture_width}, height=(int){capture_height}, framerate=(fraction){framerate}/1 ! "
-        # Using BGRx intermediate and videoconvert like the example
-        "nvvidconv flip-method=0 ! " # Assuming flip-method=0 is desired
-        f"video/x-raw, width=(int){capture_width}, height=(int){capture_height}, format=(string)BGRx ! "
+# Revert pipeline EXACTLY to the working example script's structure and formatting
+def gstreamer_pipeline(
+    sensor_id=0,
+    capture_width=640, # Keep VGA default
+    capture_height=480, # Keep VGA default
+    display_width=640, # Match capture for ROS node
+    display_height=480, # Match capture for ROS node
+    framerate=20, # Keep 20fps default
+    flip_method=0, # Keep flip_method=0
+):
+    return (
+        "nvarguscamerasrc sensor-id=%d ! "
+        "video/x-raw(memory:NVMM), width=(int)%d, height=(int)%d, framerate=(fraction)%d/1 ! "
+        "nvvidconv flip-method=%d ! "
+        "video/x-raw, width=(int)%d, height=(int)%d, format=(string)BGRx ! "
         "videoconvert ! "
-        "video/x-raw, format=(string)BGR ! appsink drop=true"
+        "video/x-raw, format=(string)BGR ! appsink" # Removed drop=true
+        % (
+            sensor_id,
+            capture_width,
+            capture_height,
+            framerate,
+            flip_method,
+            display_width, # Use display_width here
+            display_height, # Use display_height here
+        )
     )
-    return pipeline
 
 class CSICameraNode(Node):
     def __init__(self):
@@ -26,10 +41,14 @@ class CSICameraNode(Node):
 
         # Declare parameters
         self.declare_parameter('sensor_id', 0)
-        self.declare_parameter('sensor_mode', 0) # Using mode 0, but requesting lower resolution output
-        self.declare_parameter('capture_width', 640)  # Default lowered further (VGA)
-        self.declare_parameter('capture_height', 480) # Default lowered further (VGA)
-        self.declare_parameter('framerate', 20)       # Revert framerate to 20fps (supported at VGA)
+        self.declare_parameter('sensor_mode', 0) # Using mode 0
+        self.declare_parameter('capture_width', 640)  # Default VGA
+        self.declare_parameter('capture_height', 480) # Default VGA
+        # Add display width/height params used in the pipeline function now
+        self.declare_parameter('display_width', 640)
+        self.declare_parameter('display_height', 480)
+        self.declare_parameter('framerate', 20)       # Default 20fps
+        self.declare_parameter('flip_method', 0)      # Default flip_method
         self.declare_parameter('publish_rate', 20.0)  # Match framerate
         self.declare_parameter('publish_compressed', True) # Publish compressed by default
 
@@ -38,7 +57,11 @@ class CSICameraNode(Node):
         self.sensor_mode = self.get_parameter('sensor_mode').get_parameter_value().integer_value
         self.capture_width = self.get_parameter('capture_width').get_parameter_value().integer_value
         self.capture_height = self.get_parameter('capture_height').get_parameter_value().integer_value
+        # Get display width/height params
+        self.display_width = self.get_parameter('display_width').get_parameter_value().integer_value
+        self.display_height = self.get_parameter('display_height').get_parameter_value().integer_value
         self.framerate = self.get_parameter('framerate').get_parameter_value().integer_value
+        self.flip_method = self.get_parameter('flip_method').get_parameter_value().integer_value
         publish_rate = self.get_parameter('publish_rate').get_parameter_value().double_value
         self.publish_compressed = self.get_parameter('publish_compressed').get_parameter_value().bool_value
 
@@ -60,13 +83,17 @@ class CSICameraNode(Node):
         self.bridge = CvBridge()
 
         self.pipeline = gstreamer_pipeline(
+            # Pass all params to the pipeline function now
             sensor_id=self.sensor_id,
             sensor_mode=self.sensor_mode,
             capture_width=self.capture_width,
             capture_height=self.capture_height,
-            framerate=self.framerate
+            display_width=self.display_width,
+            display_height=self.display_height,
+            framerate=self.framerate,
+            flip_method=self.flip_method
         )
-        self.get_logger().info(f"Using GStreamer pipeline: {self.pipeline}")
+        self.get_logger().info(f"Using GStreamer pipeline: {self.pipeline}") # Log the exact pipeline being used
 
         self.cap = cv2.VideoCapture(self.pipeline, cv2.CAP_GSTREAMER)
 
