@@ -1,0 +1,6 @@
+[submodule "rosboard"]
+	path = rosboard
+	url = https://github.com/MarcusHsieh/rosboard.git
+[submodule "ldlidar_sl_ros2"]
+	path = ldlidar_sl_ros2
+	url = git@github.com:MarcusHsieh/ldlidar_sl_ros2.git

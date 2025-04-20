@@ -35,19 +35,25 @@ cleanup() {
 
 trap cleanup SIGINT SIGTERM
 
-# launch camera node in the background (publish is false rn)
+# launch camera node  (publish is false rn)
 echo "Launching camera node: ${CAMERA_PKG} ${CAMERA_LAUNCH_FILE}..."
 ros2 launch ${CAMERA_PKG} ${CAMERA_LAUNCH_FILE} detection_frame_skip:=4 publish_annotated_image:=false &
 CAMERA_PID=$!
 echo "Camera node started with PID: ${CAMERA_PID}"
 
-# launch motor controller node in the background
+# launch motor controller node
 echo "Launching motor controller node: ${MOTOR_CONTROLLER_PKG} ${MOTOR_CONTROLLER_NODE}..."
 ros2 run ${MOTOR_CONTROLLER_PKG} ${MOTOR_CONTROLLER_NODE} --ros-args -p serial_port:=${SERIAL_PORT} &
 MOTOR_PID=$!
 echo "Motor controller node started with PID: ${MOTOR_PID}"
 
-echo "Nodes running in background. Press Ctrl+C to stop."
+# Launch ldlidar
+ros2 launch ldlidar_sl_ros2 ld14p.launch.py &
+
+# Launch rosboard
+roslaunch rosboard rosboard.launch &
+
+echo "Nodes running Press Ctrl+C to stop."
 wait
 
 echo "Jetson script finished."
