@@ -20,7 +20,8 @@ setup(
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
-            'motor_controller_node = motor_controller.esp32_serial_controller:main',
+            'qt_joystick = motor_controller.qt_joystick_gui:main',
+            'twist_to_serial = motor_controller.twist_to_esp32_serial:main',
         ],
     },
 )
