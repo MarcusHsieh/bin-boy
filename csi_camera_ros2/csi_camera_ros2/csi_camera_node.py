@@ -6,15 +6,16 @@ import cv2
 from sensor_msgs.msg import Image, CompressedImage
 from cv_bridge import CvBridge
 
-def gstreamer_pipeline(sensor_id=0, sensor_mode=0, capture_width=1920, capture_height=1080, framerate=20):
-    """Constructs the GStreamer pipeline string."""
+def gstreamer_pipeline(sensor_id=0, sensor_mode=0, capture_width=1920, capture_height=1080, framerate=30): # Default framerate 30
+    """Constructs the GStreamer pipeline string, matching the example."""
     pipeline = (
         f"nvarguscamerasrc sensor-id={sensor_id} sensor-mode={sensor_mode} ! "
-        f"video/x-raw(memory:NVMM),width={capture_width},height={capture_height},framerate={framerate}/1,format=NV12 ! "
-        # Use nvvidconv to convert directly to BGR, potentially skipping videoconvert
-        "nvvidconv ! "
-        "video/x-raw,format=BGR ! " # Request BGR output directly from nvvidconv
-        "appsink drop=true"
+        f"video/x-raw(memory:NVMM), width=(int){capture_width}, height=(int){capture_height}, framerate=(fraction){framerate}/1 ! "
+        # Using BGRx intermediate and videoconvert like the example
+        "nvvidconv flip-method=0 ! " # Assuming flip-method=0 is desired
+        f"video/x-raw, width=(int){capture_width}, height=(int){capture_height}, format=(string)BGRx ! "
+        "videoconvert ! "
+        "video/x-raw, format=(string)BGR ! appsink drop=true"
     )
     return pipeline
 
@@ -27,8 +28,8 @@ class CSICameraNode(Node):
         self.declare_parameter('sensor_mode', 0) # Using mode 0, but requesting lower resolution output
         self.declare_parameter('capture_width', 640)  # Default lowered further (VGA)
         self.declare_parameter('capture_height', 480) # Default lowered further (VGA)
-        self.declare_parameter('framerate', 20)       # Default framerate
-        self.declare_parameter('publish_rate', 20.0)  # Default publish rate
+        self.declare_parameter('framerate', 30)       # Default framerate 30fps
+        self.declare_parameter('publish_rate', 30.0)  # Match default framerate
         self.declare_parameter('publish_compressed', True) # Add parameter to control compressed publishing
 
         # Get parameters
