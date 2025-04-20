@@ -29,7 +29,7 @@ class CSICameraNode(Node):
         self.declare_parameter('capture_width', 640)  # Default lowered further (VGA)
         self.declare_parameter('capture_height', 480) # Default lowered further (VGA)
         self.declare_parameter('framerate', 30)       # Camera capture framerate
-        self.declare_parameter('publish_rate', 15.0)  # Lower default publish rate for smoother viewing
+        self.declare_parameter('publish_rate', 100.0)  # Lower default publish rate for smoother viewing
         self.declare_parameter('publish_compressed', True) # Publish compressed by default
 
         # Get parameters
