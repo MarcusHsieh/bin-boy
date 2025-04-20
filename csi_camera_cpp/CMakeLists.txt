@@ -10,65 +10,65 @@ if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   add_compile_options(-Wall -Wextra -Wpedantic)
 endif()
 
-# Find dependencies
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(rclcpp_components REQUIRED)
-# find_package(image_transport REQUIRED) # Removed
 find_package(cv_bridge REQUIRED)
 find_package(sensor_msgs REQUIRED)
-find_package(OpenCV REQUIRED) # Find OpenCV
+find_package(vision_msgs REQUIRED)
+find_package(ament_index_cpp REQUIRED)
+find_package(OpenCV REQUIRED COMPONENTS core imgproc dnn highgui)
 
-# Add include directories
 include_directories(include)
-# Add OpenCV include directory
 include_directories(${OpenCV_INCLUDE_DIRS})
-# Add rclcpp_components include directory
 include_directories(${rclcpp_components_INCLUDE_DIRS})
 
-# Define the node library (needed for composable nodes) - must be SHARED
 add_library(${PROJECT_NAME}_nodes SHARED
   src/csi_camera_node.cpp
-  src/image_viewer_node.cpp # Add viewer source file
+  src/image_viewer_node.cpp
+  src/person_detector_node.cpp
+)
+ament_target_dependencies(${PROJECT_NAME}_nodes
+  rclcpp
+  rclcpp_components
+  cv_bridge
+  sensor_msgs
+  vision_msgs
+  ament_index_cpp
+  OpenCV
 )
 target_link_libraries(${PROJECT_NAME}_nodes
-  rclcpp::rclcpp # Use modern CMake target
-  # rclcpp_components::rclcpp_components # Removed - registration handled by macro
-  # ${image_transport_LIBRARIES} # Removed
-  ${cv_bridge_LIBRARIES} # Use library variable
-  ${sensor_msgs_LIBRARIES} # Use library variable instead of target
-  ${OpenCV_LIBRARIES} # Link OpenCV libraries
+  ${OpenCV_LIBRARIES}
 )
 
-# Register the node components
 rclcpp_components_register_nodes(${PROJECT_NAME}_nodes
   "csi_camera_cpp::CSICameraNode"
-  "csi_camera_cpp::ImageViewerNode" # Register viewer node
+  "csi_camera_cpp::ImageViewerNode"
+  "csi_camera_cpp::PersonDetectorNode"
 )
 
-# Install the library
 install(TARGETS ${PROJECT_NAME}_nodes
   ARCHIVE DESTINATION lib
   LIBRARY DESTINATION lib
   RUNTIME DESTINATION bin
 )
 
-# Install headers
 install(DIRECTORY include/
   DESTINATION include
 )
 
-# Install package.xml
 install(FILES package.xml
   DESTINATION share/${PROJECT_NAME}
 )
 
-# Install launch files
 install(DIRECTORY launch
   DESTINATION share/${PROJECT_NAME}/launch
 )
 
-# Add linters etc.
+install(DIRECTORY models/
+  DESTINATION share/${PROJECT_NAME}/models
+)
+
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
   ament_lint_auto_find_test_dependencies()

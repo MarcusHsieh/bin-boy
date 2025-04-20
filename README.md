@@ -3,26 +3,30 @@ An autonomous trash can
 
 ## Install
 ```bash
-sudo apt update && sudo apt install ros-foxy-cv-bridge -y
+sudo apt update && sudo apt install ros-foxy-cv-bridge ros-foxy-vision-msgs -y
+sudo apt install libopencv-dev python3-opencv
 ```
 
 ## Camera (`csi_camera_cpp`)
 > GStreamer -> /raw_image (unique_ptr)  
 > ROS msg --cv_bridge--> OpenCV compatible viewing  
-> Minimize latency with unique_ptr (no copying w/n nodes in same process)
+> Minimize latency with unique_ptr (no copying w/n nodes in same process)  
+> Person detector subscribes to /image_raw running pre-trained MobileNet-SSD Caffe model performing inference
 ```bash
+source install/setup.bash
+
+# defaults: detector ON, skip=1, annotated image OFF
+
 ros2 launch csi_camera_cpp csi_camera_ipc.launch.py
+
+ros2 launch csi_camera_cpp csi_camera_ipc.launch.py run_detector:=false
+
+ros2 launch csi_camera_cpp csi_camera_ipc.launch.py detection_frame_skip:=4 publish_annotated_image:=false
 ```
-Launch camera publisher + image viewer
-`CSICameraNode` accepts parameters (launch file or cmd line)
-*   `sensor_id`: Camera sensor ID (default: 0)
-*   `capture_width`, `capture_height`: Resolution requested from `nvarguscamerasrc`
-*   `display_width`, `display_height`: Resolution set after `nvvidconv` (used for CameraInfo and potentially downscaling)
-*   `framerate`: Requested framerate
-*   `flip_method`: Image flip/rotation (0: none, 1: CCW 90, 2: 180, 3: CW 90, 4: HFlip, 5: VFlip+HFlip, 6: VFlip, 7: HFlip+CW 90)
-*   `publish_rate`: Rate at which node attempts to read and publish frames
-*   `frame_id`: ROS frame ID for published messages
 
 ## Debug
 ```bash
-sudo systemctl <restart|status> nvargus-daemon
+sudo systemctl <status|restart> nvargus-daemon
+
+gst-launch-1.0 nvarguscamerasrc ! fakesink
+```

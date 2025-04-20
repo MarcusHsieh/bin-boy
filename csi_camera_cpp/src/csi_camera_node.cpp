@@ -18,13 +18,15 @@ namespace csi_camera_cpp
 // GStreamer pipeline function
 std::string CSICameraNode::gstreamer_pipeline_string()
 {
+    // Pipeline exactly matching the provided simple_camera.cpp example
     std::stringstream ss;
     ss << "nvarguscamerasrc sensor-id=" << sensor_id_ << " ! "
        << "video/x-raw(memory:NVMM), width=(int)" << capture_width_ << ", height=(int)" << capture_height_ << ", framerate=(fraction)" << framerate_ << "/1 ! "
        << "nvvidconv flip-method=" << flip_method_ << " ! "
        << "video/x-raw, width=(int)" << display_width_ << ", height=(int)" << display_height_ << ", format=(string)BGRx ! "
        << "videoconvert ! video/x-raw, format=(string)BGR ! "
-       << "appsink max-buffers=1 drop=true sync=false";
+       << "appsink max-buffers=1 drop=true sync=false"; // Re-added low-latency appsink properties
+    RCLCPP_INFO(this->get_logger(), "Using optimized appsink GStreamer pipeline: %s", ss.str().c_str());
     return ss.str();
 }
 
