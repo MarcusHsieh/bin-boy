@@ -34,8 +34,8 @@ add_library(${PROJECT_NAME}_nodes SHARED
 target_link_libraries(${PROJECT_NAME}_nodes
   rclcpp::rclcpp # Use modern CMake target
   # rclcpp_components::rclcpp_components # Removed - registration handled by macro
-  image_transport::image_transport
-  cv_bridge::cv_bridge
+  ${image_transport_LIBRARIES} # Use library variable
+  ${cv_bridge_LIBRARIES} # Use library variable
   ${sensor_msgs_LIBRARIES} # Use library variable instead of target
   ${OpenCV_LIBRARIES} # Link OpenCV libraries
 )
