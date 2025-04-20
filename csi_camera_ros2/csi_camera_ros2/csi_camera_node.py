@@ -146,7 +146,7 @@ class CSICameraNode(Node):
 
         # Log success periodically
         # if self.frame_count % 60 == 0: # Log roughly every 2 seconds at 30fps
-             self.get_logger().info(f"Successfully read frame {self.frame_count} (shape: {frame.shape}).")
+        self.get_logger().info(f"Successfully read frame {self.frame_count} (shape: {frame.shape}).")
         self.frame_count += 1
 
         # Prepare timestamp and frame_id once
