@@ -29,13 +29,13 @@ def launch_setup(context, *args, **kwargs):
             parameters=camera_node_params,
             extra_arguments=[{'use_intra_process_comms': True}]
         ),
-        ComposableNode(
-            package='csi_camera_cpp',
-            plugin='csi_camera_cpp::ImageViewerNode',
-            name='image_viewer_node',
-            remappings=[('image_raw', '/person_detections/image' if run_detector and publish_annotated_image else '/image_raw')],
-            extra_arguments=[{'use_intra_process_comms': True}]
-        ),
+        # ComposableNode(
+        #     package='csi_camera_cpp',
+        #     plugin='csi_camera_cpp::ImageViewerNode',
+        #     name='image_viewer_node',
+        #     remappings=[('image_raw', '/person_detections/image' if run_detector and publish_annotated_image else '/image_raw')],
+        #     extra_arguments=[{'use_intra_process_comms': True}]
+        # ),
     ]
 
     # node detector

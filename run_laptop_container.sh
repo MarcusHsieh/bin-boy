@@ -40,7 +40,6 @@ docker run -it --rm \
         echo 'Sourcing local workspace...'; \
         if [ -f install/setup.bash ]; then source install/setup.bash; else echo 'Local setup.bash not found, maybe build first?'; fi; \
         echo '------------------------'; \
-        echo 'Starting bash shell. Run your ROS commands, ; \
         echo 'ros2 run motor_controller qt_joystick'; \
         exec /bin/bash"
 

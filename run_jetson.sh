@@ -1,6 +1,6 @@
 #!/bin/bash
 
-SERIAL_PORT="/dev/ttyUSB0"
+SERIAL_PORT="/dev/ttyUSB2"
 CAMERA_PKG="csi_camera_cpp"
 CAMERA_LAUNCH_FILE="csi_camera_ipc.launch.py"
 MOTOR_CONTROLLER_PKG="motor_controller"
@@ -28,7 +28,7 @@ echo "--- Starting Nodes ---"
 
 cleanup() {
     echo "Caught Signal... Shutting down background processes."
-    kill -SIGINT 0
+    kill -SIGKILL 0
     wait
     echo "Cleanup complete."
 }
@@ -37,7 +37,7 @@ trap cleanup SIGINT SIGTERM
 
 # launch camera node  (publish is false rn)
 echo "Launching camera node: ${CAMERA_PKG} ${CAMERA_LAUNCH_FILE}..."
-ros2 launch ${CAMERA_PKG} ${CAMERA_LAUNCH_FILE} detection_frame_skip:=4 publish_annotated_image:=false &
+ros2 launch ${CAMERA_PKG} ${CAMERA_LAUNCH_FILE} detection_frame_skip:=4 publish_annotated_image:=true &
 CAMERA_PID=$!
 echo "Camera node started with PID: ${CAMERA_PID}"
 
@@ -48,10 +48,10 @@ MOTOR_PID=$!
 echo "Motor controller node started with PID: ${MOTOR_PID}"
 
 # Launch ldlidar
-ros2 launch ldlidar_sl_ros2 ld14p.launch.py &
+ros2 launch ldlidar_sl_ros2 ld14p.launch.py port_name:=/dev/ttyUSB1 &
 
 # Launch rosboard
-roslaunch rosboard rosboard.launch &
+ros2 run rosboard rosboard_node &
 
 echo "Nodes running Press Ctrl+C to stop."
 wait
