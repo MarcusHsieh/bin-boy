@@ -1,0 +1,23 @@
+FROM osrf/ros:foxy-desktop
+
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+        python3-pip \
+        python3-venv \
+        python3-pyqt5 \
+        python3-serial \
+        git \
+        nano \
+        iputils-ping \
+        net-tools \
+        usbutils \
+    && rm -rf /var/lib/apt/lists/*
+
+
+WORKDIR /ros2_ws
+
+# Default command (provides a bash shell)
+CMD ["/bin/bash"]
