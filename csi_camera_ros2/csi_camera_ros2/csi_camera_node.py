@@ -2,20 +2,20 @@
 
 import rclpy
 from rclpy.node import Node
-from rclpy.qos import QoSProfile, QoSReliabilityPolicy, QoSHistoryPolicy
 import cv2
-from sensor_msgs.msg import Image, CompressedImage
+from sensor_msgs.msg import Image
 from cv_bridge import CvBridge
+import time # Import time for potential debugging delays
 
-# Revert pipeline EXACTLY to the working example script's structure and formatting
+# Pipeline function exactly from the working example script
 def gstreamer_pipeline(
     sensor_id=0,
-    capture_width=640, # Keep VGA default
-    capture_height=480, # Keep VGA default
-    display_width=640, # Match capture for ROS node
-    display_height=480, # Match capture for ROS node
-    framerate=20, # Keep 20fps default
-    flip_method=0, # Keep flip_method=0
+    capture_width=1920,
+    capture_height=1080,
+    display_width=960,
+    display_height=540,
+    framerate=30,
+    flip_method=0,
 ):
     return (
         "nvarguscamerasrc sensor-id=%d ! "
@@ -23,15 +23,15 @@ def gstreamer_pipeline(
         "nvvidconv flip-method=%d ! "
         "video/x-raw, width=(int)%d, height=(int)%d, format=(string)BGRx ! "
         "videoconvert ! "
-        "video/x-raw, format=(string)BGR ! appsink" # Removed drop=true
+        "video/x-raw, format=(string)BGR ! appsink"
         % (
             sensor_id,
             capture_width,
             capture_height,
             framerate,
             flip_method,
-            display_width, # Use display_width here
-            display_height, # Use display_height here
+            display_width,
+            display_height,
         )
     )
 
@@ -39,53 +39,35 @@ class CSICameraNode(Node):
     def __init__(self):
         super().__init__('csi_camera_node')
 
-        # Declare parameters
+        # Declare parameters matching the pipeline function
         self.declare_parameter('sensor_id', 0)
-        # self.declare_parameter('sensor_mode', 0) # Removed, not used in pipeline function
-        self.declare_parameter('capture_width', 640)  # Default VGA
-        self.declare_parameter('capture_height', 480) # Default VGA
-        # Add display width/height params used in the pipeline function now
-        self.declare_parameter('display_width', 640)
-        self.declare_parameter('display_height', 480)
-        self.declare_parameter('framerate', 20)       # Default 20fps
-        self.declare_parameter('flip_method', 0)      # Default flip_method
-        self.declare_parameter('publish_rate', 20.0)  # Match framerate
-        self.declare_parameter('publish_compressed', True) # Publish compressed by default
+        self.declare_parameter('capture_width', 1920)
+        self.declare_parameter('capture_height', 1080)
+        self.declare_parameter('display_width', 960)
+        self.declare_parameter('display_height', 540)
+        self.declare_parameter('framerate', 30)
+        self.declare_parameter('flip_method', 0)
+        # Publish rate parameter - let's keep it matching framerate for now
+        self.declare_parameter('publish_rate', 30.0)
 
         # Get parameters
         self.sensor_id = self.get_parameter('sensor_id').get_parameter_value().integer_value
-        # self.sensor_mode = self.get_parameter('sensor_mode').get_parameter_value().integer_value # Removed
         self.capture_width = self.get_parameter('capture_width').get_parameter_value().integer_value
         self.capture_height = self.get_parameter('capture_height').get_parameter_value().integer_value
-        # Get display width/height params
         self.display_width = self.get_parameter('display_width').get_parameter_value().integer_value
         self.display_height = self.get_parameter('display_height').get_parameter_value().integer_value
         self.framerate = self.get_parameter('framerate').get_parameter_value().integer_value
         self.flip_method = self.get_parameter('flip_method').get_parameter_value().integer_value
         publish_rate = self.get_parameter('publish_rate').get_parameter_value().double_value
-        self.publish_compressed = self.get_parameter('publish_compressed').get_parameter_value().bool_value
 
-        # Define a QoS profile: Best Effort, Depth 1
-        qos_profile = QoSProfile(
-            reliability=QoSReliabilityPolicy.BEST_EFFORT,
-            history=QoSHistoryPolicy.KEEP_LAST,
-            depth=1
-        )
-
+        # Create raw image publisher (using default QoS)
         topic_name_raw = f'/csi_camera_{self.sensor_id}/image_raw'
-        self.image_pub_raw = self.create_publisher(Image, topic_name_raw, qos_profile) # Use QoS profile
-        self.image_pub_compressed = None
-        log_message = f"Started camera node for sensor ID {self.sensor_id}. Publishing Raw: {topic_name_raw}"
-        if self.publish_compressed:
-            topic_name_compressed = f'{topic_name_raw}/compressed'
-            self.image_pub_compressed = self.create_publisher(CompressedImage, topic_name_compressed, qos_profile) # Use QoS profile
-            log_message += f", Compressed: {topic_name_compressed}"
+        self.image_pub_raw = self.create_publisher(Image, topic_name_raw, 10) # Default QoS depth 10
         self.bridge = CvBridge()
 
+        # Construct the pipeline
         self.pipeline = gstreamer_pipeline(
-            # Pass all params to the pipeline function now (excluding sensor_mode)
             sensor_id=self.sensor_id,
-            # sensor_mode=self.sensor_mode, # Removed
             capture_width=self.capture_width,
             capture_height=self.capture_height,
             display_width=self.display_width,
@@ -93,73 +75,84 @@ class CSICameraNode(Node):
             framerate=self.framerate,
             flip_method=self.flip_method
         )
-        self.get_logger().info(f"Using GStreamer pipeline: {self.pipeline}") # Log the exact pipeline being used
+        self.get_logger().info(f"Using GStreamer pipeline: {self.pipeline}")
 
+        # Attempt to open camera capture
+        self.get_logger().info("Attempting to open camera...")
         self.cap = cv2.VideoCapture(self.pipeline, cv2.CAP_GSTREAMER)
 
-        if not self.cap.isOpened():
-            self.get_logger().error(f"Error: Unable to open camera with sensor ID {self.sensor_id}")
-            rclpy.shutdown()
-            return
+        # Add a small delay and check if opened
+        time.sleep(2.0) # Give pipeline time to initialize
 
-        self.timer = self.create_timer(1.0 / publish_rate, self.timer_callback)
-        self.get_logger().info(log_message) # Use the constructed log message
-        self.frame_count = 0 # Add frame counter for debugging
+        if not self.cap.isOpened():
+            self.get_logger().error(f"Error: Unable to open camera with GStreamer pipeline. Check pipeline string and camera connection.")
+            # Attempt fallback with just sensor ID (less reliable)
+            self.get_logger().info("Attempting fallback direct camera open...")
+            self.cap = cv2.VideoCapture(self.sensor_id)
+            if not self.cap.isOpened():
+                 self.get_logger().error(f"Fallback direct open also failed. Shutting down.")
+                 rclpy.shutdown()
+                 return
+            else:
+                 self.get_logger().warn("Opened camera directly, not using GStreamer pipeline!")
+        else:
+             self.get_logger().info("Successfully opened camera using GStreamer pipeline.")
+
+
+        # Create timer for publishing
+        if publish_rate > 0:
+             timer_period = 1.0 / publish_rate
+             self.timer = self.create_timer(timer_period, self.timer_callback)
+             self.get_logger().info(f"Publishing images to {topic_name_raw} at {publish_rate} Hz")
+        else:
+             self.get_logger().warn("Publish rate set to 0, images will not be published.")
+
+        self.frame_count = 0
 
     def timer_callback(self):
-        # self.get_logger().debug("Timer callback triggered.") # Optional: uncomment for very verbose logging (use --log-level debug)
+        if not self.cap.isOpened():
+             self.get_logger().warn("Timer callback called but camera is not open.")
+             return
+
         ret, frame = self.cap.read()
-        if not ret:
-            # Use warn level, as error might imply a crash, this might be recoverable or intermittent
-            self.get_logger().warn(f"cap.read() returned False. Unable to read frame from camera with sensor ID {self.sensor_id}")
-            # Consider adding logic to attempt reconnection or shutdown
+        if not ret or frame is None:
+            self.get_logger().warn(f"cap.read() returned False or empty frame.")
             return
 
-        # Log success only periodically to avoid spamming logs
-        if self.frame_count % 60 == 0: # Log roughly every 3 seconds at 20fps
-             self.get_logger().info(f"Successfully read frame {self.frame_count}.")
+        # Log success periodically
+        if self.frame_count % 60 == 0: # Log roughly every 2 seconds at 30fps
+             self.get_logger().info(f"Successfully read frame {self.frame_count} (shape: {frame.shape}).")
         self.frame_count += 1
 
-        # Prepare timestamp and frame_id
+        # Prepare and publish raw image
         now = self.get_clock().now().to_msg()
         frame_id = f"camera_{self.sensor_id}_frame"
-
-        # Publish raw image
         image_msg_raw = self.bridge.cv2_to_imgmsg(frame, "bgr8")
         image_msg_raw.header.stamp = now
         image_msg_raw.header.frame_id = frame_id
         self.image_pub_raw.publish(image_msg_raw)
 
-        # Publish compressed image only if enabled
-        if self.publish_compressed and self.image_pub_compressed:
-            compressed_msg = CompressedImage()
-            compressed_msg.header.stamp = now
-            compressed_msg.header.frame_id = frame_id
-            compressed_msg.format = "jpeg"
-            # Use imencode parameters for potential speedup (lower quality)
-            encode_param = [int(cv2.IMWRITE_JPEG_QUALITY), 90] # Quality 90 (0-100)
-            compressed_msg.data = cv2.imencode('.jpg', frame, encode_param)[1].tobytes()
-            self.image_pub_compressed.publish(compressed_msg)
-
     def destroy_node(self):
         self.get_logger().info("Shutting down camera node.")
-        if self.cap.isOpened():
+        if hasattr(self, 'cap') and self.cap.isOpened():
             self.cap.release()
+            self.get_logger().info("Camera capture released.")
         super().destroy_node()
 
 def main(args=None):
     rclpy.init(args=args)
     csi_camera_node = CSICameraNode()
-    try:
-        rclpy.spin(csi_camera_node)
-    except KeyboardInterrupt:
-        pass
-    finally:
-        # Destroy the node explicitly
-        # (optional - otherwise it will be done automatically
-        # when the garbage collector destroys the node object)
-        csi_camera_node.destroy_node()
-        rclpy.shutdown()
+    if rclpy.ok(): # Check if node initialization failed
+        try:
+            rclpy.spin(csi_camera_node)
+        except KeyboardInterrupt:
+            pass
+        except Exception as e:
+            csi_camera_node.get_logger().error(f"Unhandled exception in spin: {e}")
+        finally:
+            csi_camera_node.destroy_node()
+            if rclpy.ok():
+                 rclpy.shutdown()
 
 if __name__ == '__main__':
     main()
