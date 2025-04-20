@@ -49,9 +49,9 @@ class CSICameraNode(Node):
         self.declare_parameter('flip_method', 0)
         # Publish rate parameter - let's keep it matching framerate for now
         self.declare_parameter('publish_rate', 30.0)
-        # Add parameters to control publishing
-        self.declare_parameter('publish_raw', False) # Default OFF
-        self.declare_parameter('publish_compressed', True) # Default ON
+        # Add parameters to control publishing - Defaulting to RAW only for lowest latency
+        self.declare_parameter('publish_raw', True) # Default ON
+        self.declare_parameter('publish_compressed', False) # Default OFF
 
         # Get parameters
         self.sensor_id = self.get_parameter('sensor_id').get_parameter_value().integer_value
