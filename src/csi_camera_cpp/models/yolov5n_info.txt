@@ -1,0 +1,48 @@
+YOLOv5n Model Information
+========================
+
+Model: YOLOv5n (Nano)
+Architecture: YOLOv5
+Input Size: 640x640x3
+Format: ONNX (Opset 12)
+Precision: FP32 (will be converted to FP16 by TensorRT)
+
+Classes: 80 (COCO dataset)
+Person Class ID: 0
+
+Performance (Jetson Nano with TensorRT FP16):
+- Expected Inference Time: 10-20ms
+- Expected FPS: 40-50
+- Expected mAP50: ~45%
+
+Preprocessing:
+- Input: BGR image (any size)
+- Resize: 640x640 (letterbox with padding)
+- Normalization: /255.0 (0-1 range)
+- Format: NCHW (batch, channels, height, width)
+
+Output Format:
+- Shape: [1, 25200, 85]
+  - 25200 = number of detection boxes
+  - 85 = [x, y, w, h, objectness, class0_prob, ..., class79_prob]
+
+- Box format: [center_x, center_y, width, height] (normalized 0-1)
+- Confidence threshold: 0.5 (recommended)
+- NMS IoU threshold: 0.45 (recommended)
+
+Post-processing:
+1. Filter by objectness score (> 0.5)
+2. Filter by person class confidence (> 0.5)
+3. Apply NMS (Non-Maximum Suppression)
+4. Convert box coordinates to pixel values
+
+Advantages over MobileNet-SSD:
+- 2x better accuracy (45% vs 23% mAP50)
+- Better small object detection
+- Better occlusion handling
+- Modern architecture (2021)
+- Active development and support
+
+Trade-offs:
+- Slightly slower (10-20ms vs 5-15ms)
+- Still real-time on Jetson Nano (40+ FPS)

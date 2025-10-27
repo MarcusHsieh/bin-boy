@@ -1,30 +1,39 @@
-# Bin Boy
-An autonomous trash can
+# Bin-Boy
 
-## Install
+ROS2 robotics project for autonomous navigation and perception.
+
+## Build
+
+> Run this once
 ```bash
-sudo apt update && sudo apt install ros-foxy-cv-bridge ros-foxy-vision-msgs -y
-sudo apt install libopencv-dev python3-opencv
+colcon build
 ```
 
-## Camera (`csi_camera_cpp`)
-> GStreamer -> /raw_image (unique_ptr)  
-> ROS msg --cv_bridge--> OpenCV compatible viewing  
-> Minimize latency with unique_ptr (no copying w/n nodes in same process)  
-> Person detector subscribes to /image_raw running pre-trained MobileNet-SSD Caffe model performing inference
+> Run this in every terminal
 ```bash
 source install/setup.bash
+```
 
-# defaults: detector ON, skip=1, annotated image OFF
+## Launch
 
-ros2 launch csi_camera_cpp csi_camera_ipc.launch.py
-
-ros2 launch csi_camera_cpp csi_camera_ipc.launch.py run_detector:=false
-
+> Terminal 1 - Camera
+```bash
 ros2 launch csi_camera_cpp csi_camera_ipc.launch.py detection_frame_skip:=4 publish_annotated_image:=false
 ```
 
-## Debug
+> Terminal 2 - 2D LIDAR
+```bash
+ros2 launch ldlidar_sl_ros2 ldlidar.launch.py
+```
+
+## Troubleshooting
+
+> RTPS Error Debug
+```bash
+sudo rm -f /dev/shm/fastrtps*
+```
+
+> cap.read() error
 ```bash
 sudo systemctl <status|restart> nvargus-daemon
 
