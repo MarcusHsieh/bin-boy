@@ -1,0 +1,24 @@
+# Kiwi Drive Parameters - ACTUAL ROBOT MEASUREMENTS
+
+kiwi_drive_node:
+  ros__parameters:
+    # Serial communication
+    serial_port: '/dev/ttyUSB0'
+    baudrate: 1000000
+
+    # Servo IDs (must match physical servo IDs)
+    # Order: [front, left_rear, right_rear]
+    wheel_ids: [1, 2, 3]
+
+    # Physical dimensions (meters) - MEASURED VALUES
+    wheel_radius: 0.0725  # 145mm diameter wheels = 72.5mm radius
+    robot_radius: 0.1815  # Wheels positioned outside body: 157.5mm + 19mm + 5mm clearance
+
+    # Odometry settings
+    publish_rate: 50.0    # Hz
+    publish_tf: true
+    encoder_resolution: 4096  # STS3215: 12-bit magnetic encoder
+
+    # Speed limits (for safety)
+    max_linear_speed: 0.5   # m/s
+    max_angular_speed: 2.0  # rad/s

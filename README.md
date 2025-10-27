@@ -1,6 +1,6 @@
 # Bin-Boy
 
-ROS2 robotics project for autonomous navigation and perception.
+ROS2 trash can for autonomous navigation and perception.
 
 ## Build
 
@@ -23,7 +23,7 @@ ros2 launch csi_camera_cpp csi_camera_ipc.launch.py detection_frame_skip:=4 publ
 
 > Terminal 2 - 2D LIDAR
 ```bash
-ros2 launch ldlidar_sl_ros2 ldlidar.launch.py
+ros2 launch ldlidar_sl_ros2 ld14p.launch.py
 ```
 
 ## Troubleshooting

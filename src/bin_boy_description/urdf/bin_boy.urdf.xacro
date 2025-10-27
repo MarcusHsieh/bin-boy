@@ -1,0 +1,280 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="bin_boy">
+
+  <!-- PROPERTIES -->
+  <xacro:property name="PI" value="3.1415926535897931"/>
+
+  <!-- Base dimensions - ACTUAL ROBOT MEASUREMENTS -->
+  <xacro:property name="base_radius" value="0.1575"/>   <!-- 315mm diameter = 157.5mm radius -->
+  <xacro:property name="base_height" value="0.300"/>    <!-- 300mm tall cylinder -->
+  <xacro:property name="base_mass" value="5.0"/>        <!-- 5kg estimated -->
+
+  <!-- Wheel properties - ACTUAL MEASUREMENTS -->
+  <xacro:property name="wheel_radius" value="0.0725"/>  <!-- 145mm diameter = 72.5mm radius -->
+  <xacro:property name="wheel_width" value="0.038"/>    <!-- 38mm wide -->
+  <xacro:property name="wheel_mass" value="0.3"/>       <!-- 300g per wheel+servo -->
+
+  <!-- Kiwi drive geometry -->
+  <!-- Wheels positioned OUTSIDE the cylinder to avoid overlap -->
+  <!-- Place wheels at radius + half wheel width + small clearance -->
+  <xacro:property name="wheel_offset_r" value="${base_radius + wheel_width/2 + 0.005}"/> <!-- 5mm clearance from body -->
+
+  <!-- Robot base_link is positioned so wheels just touch ground -->
+  <!-- base_link origin = wheel_radius (so wheel centers are at wheel_radius height) -->
+  <xacro:property name="base_link_z_offset" value="${wheel_radius}"/>
+
+  <!-- Sensor heights (relative to base_link, which is at wheel_radius above ground) -->
+  <xacro:property name="camera_height" value="0.150"/>  <!-- 150mm from bottom of cylinder -->
+  <xacro:property name="lidar_height" value="${base_height}"/> <!-- On top of cylinder -->
+
+  <!-- MATERIALS -->
+  <material name="black">
+    <color rgba="0.1 0.1 0.1 1"/>
+  </material>
+
+  <material name="white">
+    <color rgba="0.9 0.9 0.9 1"/>
+  </material>
+
+  <material name="red">
+    <color rgba="0.8 0.0 0.0 1"/>
+  </material>
+
+  <material name="blue">
+    <color rgba="0.0 0.0 0.8 1"/>
+  </material>
+
+  <material name="green">
+    <color rgba="0.0 0.8 0.0 1"/>
+  </material>
+
+  <!-- BASE FOOTPRINT (on ground, for navigation) -->
+  <link name="base_footprint"/>
+
+  <!-- BASE LINK (at wheel center height, so wheels touch ground) -->
+  <link name="base_link">
+    <visual>
+      <!-- Cylinder bottom sits at z=0 of base_link -->
+      <origin xyz="0 0 ${base_height/2}" rpy="0 0 0"/>
+      <geometry>
+        <cylinder radius="${base_radius}" length="${base_height}"/>
+      </geometry>
+      <material name="white"/>
+    </visual>
+
+    <collision>
+      <origin xyz="0 0 ${base_height/2}" rpy="0 0 0"/>
+      <geometry>
+        <cylinder radius="${base_radius}" length="${base_height}"/>
+      </geometry>
+    </collision>
+
+    <inertial>
+      <origin xyz="0 0 ${base_height/2}" rpy="0 0 0"/>
+      <mass value="${base_mass}"/>
+      <inertia ixx="${base_mass*(3*base_radius*base_radius + base_height*base_height)/12}"
+               ixy="0" ixz="0"
+               iyy="${base_mass*(3*base_radius*base_radius + base_height*base_height)/12}"
+               iyz="0"
+               izz="${base_mass*base_radius*base_radius/2}"/>
+    </inertial>
+  </link>
+
+  <!-- BASE_FOOTPRINT to BASE_LINK joint -->
+  <joint name="base_footprint_joint" type="fixed">
+    <parent link="base_footprint"/>
+    <child link="base_link"/>
+    <!-- Lift base_link so wheel centers are at wheel_radius height -->
+    <!-- This puts wheel bottoms exactly at ground level -->
+    <origin xyz="0 0 ${base_link_z_offset}" rpy="0 0 0"/>
+  </joint>
+
+  <!-- WHEEL MACRO for kiwi drive -->
+  <!--
+    Kiwi drive wheel orientation:
+    - Each wheel's rotation axis must be tangent to the circle
+    - Wheel rotates about Y-axis in its own frame
+    - Wheels positioned OUTSIDE cylinder body to prevent overlap
+
+    For wheel at angle theta from front:
+    - Position: ((r + offset)*cos(theta), (r + offset)*sin(theta), 0)
+    - Orientation: rotated by (theta + 90deg) around Z-axis so wheel rolls tangentially
+    - Z position = 0 (at same height as base_link origin = wheel center height)
+  -->
+  <xacro:macro name="kiwi_wheel" params="prefix angle">
+    <link name="${prefix}_wheel">
+      <visual>
+        <!-- Wheel oriented to roll tangent to circle -->
+        <origin xyz="0 0 0" rpy="${PI/2} 0 0"/>
+        <geometry>
+          <cylinder radius="${wheel_radius}" length="${wheel_width}"/>
+        </geometry>
+        <material name="black"/>
+      </visual>
+
+      <collision>
+        <origin xyz="0 0 0" rpy="${PI/2} 0 0"/>
+        <geometry>
+          <cylinder radius="${wheel_radius}" length="${wheel_width}"/>
+        </geometry>
+      </collision>
+
+      <inertial>
+        <origin xyz="0 0 0" rpy="${PI/2} 0 0"/>
+        <mass value="${wheel_mass}"/>
+        <inertia ixx="${wheel_mass*(3*wheel_radius*wheel_radius + wheel_width*wheel_width)/12}"
+                 ixy="0" ixz="0"
+                 iyy="${wheel_mass*(3*wheel_radius*wheel_radius + wheel_width*wheel_width)/12}"
+                 iyz="0"
+                 izz="${wheel_mass*wheel_radius*wheel_radius/2}"/>
+      </inertial>
+    </link>
+
+    <joint name="${prefix}_wheel_joint" type="continuous">
+      <parent link="base_link"/>
+      <child link="${prefix}_wheel"/>
+      <!-- Position OUTSIDE body at wheel center height (z=0 relative to base_link) -->
+      <!-- Rotate wheel frame by (angle + 90deg) so it rolls tangent to circle -->
+      <origin xyz="${wheel_offset_r*cos(angle)} ${wheel_offset_r*sin(angle)} 0"
+              rpy="0 0 ${angle + PI/2}"/>
+      <!-- Wheel rotates about its Y-axis (now pointing tangentially) -->
+      <axis xyz="0 1 0"/>
+    </joint>
+  </xacro:macro>
+
+  <!-- CREATE THREE WHEELS at 120 degree intervals -->
+  <!--
+    Kiwi drive configuration (top view):
+         0 deg (Front)
+            W0
+           /  \
+      120 /    \ 240
+         /  +Z  \
+        W1 ==== W2
+
+    Wheels positioned OUTSIDE cylinder body
+  -->
+
+  <!-- Wheel 0: Front (0 degrees) -->
+  <xacro:kiwi_wheel prefix="front" angle="0"/>
+
+  <!-- Wheel 1: Rear Left (120 degrees = 2*PI/3) -->
+  <xacro:kiwi_wheel prefix="left_rear" angle="${2*PI/3}"/>
+
+  <!-- Wheel 2: Rear Right (240 degrees = 4*PI/3) -->
+  <xacro:kiwi_wheel prefix="right_rear" angle="${4*PI/3}"/>
+
+  <!-- LIDAR SENSOR (LD14P) - Mounted on TOP of cylinder -->
+  <link name="base_laser">
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <!-- LD14P: 96.3mm diameter, 38mm height -->
+        <cylinder radius="0.04815" length="0.038"/>
+      </geometry>
+      <material name="black"/>
+    </visual>
+
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <cylinder radius="0.04815" length="0.038"/>
+      </geometry>
+    </collision>
+
+    <inertial>
+      <mass value="0.131"/>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <inertia ixx="0.0001" ixy="0" ixz="0"
+               iyy="0.0001" iyz="0"
+               izz="0.0001"/>
+    </inertial>
+  </link>
+
+  <joint name="laser_joint" type="fixed">
+    <parent link="base_link"/>
+    <child link="base_laser"/>
+    <!-- Mounted on top of cylinder (base_height) + half LIDAR height for center -->
+    <origin xyz="0 0 ${lidar_height + 0.019}" rpy="0 0 0"/>
+  </joint>
+
+  <!-- CAMERA (CSI Wide Angle Camera) -->
+  <!-- Mounted on edge of cylinder, 150mm from bottom -->
+  <link name="camera_link">
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <!-- Approximate camera module size -->
+        <box size="0.025 0.025 0.015"/>
+      </geometry>
+      <material name="blue"/>
+    </visual>
+
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <box size="0.025 0.025 0.015"/>
+      </geometry>
+    </collision>
+
+    <inertial>
+      <mass value="0.05"/>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <inertia ixx="0.00001" ixy="0" ixz="0"
+               iyy="0.00001" iyz="0"
+               izz="0.00001"/>
+    </inertial>
+  </link>
+
+  <joint name="camera_joint" type="fixed">
+    <parent link="base_link"/>
+    <child link="camera_link"/>
+    <!-- On edge of cylinder at 150mm height, no tilt -->
+    <!-- Position slightly outside cylinder edge (camera depth/2 + small clearance) -->
+    <origin xyz="${base_radius + 0.0125} 0 ${camera_height}" rpy="0 0 0"/>
+  </joint>
+
+  <!-- Camera optical frame (ROS standard for camera coordinate systems) -->
+  <!--
+    Converts from camera_link (mechanical mounting) to optical frame:
+    - camera_link: X=right, Y=down, Z=forward (mechanical)
+    - camera_optical: X=right(image), Y=down(image), Z=depth (computer vision convention)
+
+    This 90 degree rotation aligns with OpenCV/image processing conventions
+  -->
+  <link name="camera_optical_frame"/>
+
+  <joint name="camera_optical_joint" type="fixed">
+    <parent link="camera_link"/>
+    <child link="camera_optical_frame"/>
+    <!-- Standard ROS camera optical frame transform -->
+    <origin xyz="0 0 0" rpy="${-PI/2} 0 ${-PI/2}"/>
+  </joint>
+
+  <!-- IMU (MPU-6050) -->
+  <link name="imu_link">
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <box size="0.02 0.016 0.003"/>
+      </geometry>
+      <material name="green"/>
+    </visual>
+
+    <inertial>
+      <mass value="0.01"/>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <inertia ixx="0.000001" ixy="0" ixz="0"
+               iyy="0.000001" iyz="0"
+               izz="0.000001"/>
+    </inertial>
+  </link>
+
+  <joint name="imu_joint" type="fixed">
+    <parent link="base_link"/>
+    <child link="imu_link"/>
+    <!-- Mounted inside base, low and centered -->
+    <origin xyz="0 0 0.05" rpy="0 0 0"/>
+  </joint>
+
+</robot>
