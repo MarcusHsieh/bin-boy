@@ -92,11 +92,11 @@ class PersonTracker(Node):
         self.id_max_distance = 150.0  # pixels - max movement between frames for same ID
 
         # Color histogram extractor for person re-identification
-        # Optimized: 16×16×8 bins (2,048 total) for 5x speedup
-        self.color_hist = ColorHistogram(h_bins=16, s_bins=16, v_bins=8)
+        # Jetson Nano 4GB optimized: 8×8×4 bins (256 total) for 8x speedup
+        self.color_hist = ColorHistogram(h_bins=8, s_bins=8, v_bins=4)
 
-        # Thread pool for parallel person processing
-        self.thread_pool = ThreadPoolExecutor(max_workers=4)
+        # Thread pool for parallel person processing (reduced for Jetson Nano 4GB)
+        self.thread_pool = ThreadPoolExecutor(max_workers=2)
 
         # Create synchronized subscribers for detections + images
         if self.enable_color_tracking:
@@ -107,7 +107,7 @@ class PersonTracker(Node):
             # Synchronize detection and image messages (100ms tolerance)
             self.sync = message_filters.ApproximateTimeSynchronizer(
                 [self.detection_sub, self.image_sub],
-                queue_size=10,
+                queue_size=5,  # Reduced for Jetson Nano 4GB (saves ~5MB)
                 slop=0.1  # 100ms tolerance
             )
             self.sync.registerCallback(self.synchronized_callback)
@@ -119,7 +119,7 @@ class PersonTracker(Node):
                 Detection2DArray,
                 detection_topic,
                 self.detection_only_callback,
-                10
+                5  # Reduced for Jetson Nano 4GB
             )
             self.get_logger().info('Color tracking disabled - detection only mode')
 
@@ -804,6 +804,18 @@ class PersonTracker(Node):
     def publish_tracking_image(self, all_detections, persons, target_person):
         """Publish annotated image with target highlighted in different color"""
         if self.current_image is None:
+            return
+
+        # Optimization: Only copy image if there are persons to annotate (Jetson Nano 4GB)
+        if not persons:
+            # No persons detected - publish original image without copying
+            try:
+                annotated_msg = self.bridge.cv2_to_imgmsg(self.current_image, encoding='bgr8')
+                annotated_msg.header.stamp = self.get_clock().now().to_msg()
+                annotated_msg.header.frame_id = 'camera_link'
+                self.annotated_image_pub.publish(annotated_msg)
+            except Exception as e:
+                self.get_logger().error(f'Failed to publish tracking image: {e}')
             return
 
         # Create annotated image

@@ -45,10 +45,10 @@ class PersonTrackerWidget(QWidget):
             10
         )
 
-        # Timer to update UI
+        # Timer to update UI (optimized for Jetson Nano 4GB)
         self.update_timer = QTimer()
         self.update_timer.timeout.connect(self.update_ui)
-        self.update_timer.start(100)  # 10 Hz
+        self.update_timer.start(200)  # 5 Hz (reduced for lower memory overhead)
 
     def setup_ui(self):
         """Setup the Qt UI layout"""
