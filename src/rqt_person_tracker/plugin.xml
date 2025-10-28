@@ -1,0 +1,15 @@
+<library path="rqt_person_tracker">
+  <class name="PersonTrackerPlugin" type="rqt_person_tracker.person_tracker_plugin.PersonTrackerPlugin" base_class_type="rqt_gui_py::Plugin">
+    <description>
+      Real-time person tracking dashboard showing detected people, tracking metrics, and visualization.
+    </description>
+    <qtgui>
+      <group>
+        <label>Robotics</label>
+      </group>
+      <label>Person Tracker</label>
+      <icon type="theme">system-search</icon>
+      <statustip>Person tracking dashboard with real-time metrics</statustip>
+    </qtgui>
+  </class>
+</library>

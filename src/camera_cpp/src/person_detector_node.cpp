@@ -40,8 +40,13 @@ PersonDetectorNode::PersonDetectorNode(const rclcpp::NodeOptions & options)
         RCLCPP_INFO(this->get_logger(), "Publishing annotated detection images to %s", image_pub_->get_topic_name());
     }
 
+    // publish camera performance metrics (for dashboard)
+    performance_pub_ = this->create_publisher<bin_boy_interfaces::msg::CameraPerformance>(
+        "camera/performance", qos);
+
     RCLCPP_INFO(this->get_logger(), "Subscribed to %s", subscription_->get_topic_name());
     RCLCPP_INFO(this->get_logger(), "Publishing detections to %s", detection_pub_->get_topic_name());
+    RCLCPP_INFO(this->get_logger(), "Publishing camera performance to %s", performance_pub_->get_topic_name());
     RCLCPP_INFO(this->get_logger(), "PersonDetectorNode initialized.");
 }
 
@@ -56,6 +61,7 @@ void PersonDetectorNode::declare_parameters()
     this->declare_parameter<bool>("publish_annotated_image", true);
     this->declare_parameter<int>("detection_frame_skip", 0);
     this->declare_parameter<double>("confidence_threshold", 0.5);
+    this->declare_parameter<bool>("debug_logging", false);
 }
 
 void PersonDetectorNode::load_parameters()
@@ -65,6 +71,7 @@ void PersonDetectorNode::load_parameters()
     this->get_parameter("use_tensorrt", use_tensorrt_);
     this->get_parameter("publish_annotated_image", publish_annotated_image_);
     this->get_parameter("detection_frame_skip", detection_frame_skip_);
+    this->get_parameter("debug_logging", debug_logging_);
 
     double conf_threshold;
     this->get_parameter("confidence_threshold", conf_threshold);
@@ -73,6 +80,7 @@ void PersonDetectorNode::load_parameters()
     RCLCPP_INFO(this->get_logger(), "TensorRT enabled: %s", use_tensorrt_ ? "true" : "false");
     RCLCPP_INFO(this->get_logger(), "Confidence threshold: %.2f", confidence_threshold_);
     RCLCPP_INFO(this->get_logger(), "Detection frame skip set to: %d", detection_frame_skip_);
+    RCLCPP_INFO(this->get_logger(), "Debug logging: %s", debug_logging_ ? "enabled" : "disabled");
 }
 
 void PersonDetectorNode::load_model()
@@ -203,12 +211,22 @@ void PersonDetectorNode::image_callback(sensor_msgs::msg::Image::UniquePtr msg)
         auto end = std::chrono::high_resolution_clock::now();
 
         float inference_time = std::chrono::duration<float, std::milli>(end - start).count();
+        float fps = 1000.0f / inference_time;
 
-        // Log inference time periodically (every 30 frames)
-        if (frame_counter_ % 30 == 0) {
+        // Publish performance metrics to dashboard
+        bin_boy_interfaces::msg::CameraPerformance perf_msg;
+        perf_msg.header = msg->header;
+        perf_msg.inference_time_ms = inference_time;
+        perf_msg.fps = fps;
+        perf_msg.gpu_detections = static_cast<int32_t>(detections.size());
+        perf_msg.frame_number = frame_counter_;
+        performance_pub_->publish(perf_msg);
+
+        // Log inference time periodically (every 30 frames) - only if debug logging enabled
+        if (debug_logging_ && frame_counter_ % 30 == 0) {
             RCLCPP_INFO(this->get_logger(),
                 "TensorRT Inference time: %.2f ms (%.1f FPS) | GPU Detections: %zu",
-                inference_time, 1000.0f / inference_time, detections.size());
+                inference_time, fps, detections.size());
         }
 
         // Process detections

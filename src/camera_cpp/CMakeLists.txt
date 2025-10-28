@@ -16,6 +16,7 @@ find_package(rclcpp_components REQUIRED)
 find_package(cv_bridge REQUIRED)
 find_package(sensor_msgs REQUIRED)
 find_package(vision_msgs REQUIRED)
+find_package(bin_boy_interfaces REQUIRED)
 find_package(ament_index_cpp REQUIRED)
 find_package(OpenCV REQUIRED COMPONENTS core imgproc dnn highgui)
 find_package(CUDA REQUIRED)
@@ -43,6 +44,7 @@ ament_target_dependencies(${PROJECT_NAME}_nodes
   cv_bridge
   sensor_msgs
   vision_msgs
+  bin_boy_interfaces
   ament_index_cpp
   OpenCV
 )

@@ -4,6 +4,7 @@
 #include <rclcpp/rclcpp.hpp>
 #include <sensor_msgs/msg/image.hpp>
 #include <vision_msgs/msg/detection2_d_array.hpp>
+#include <bin_boy_interfaces/msg/camera_performance.hpp>
 #include <cv_bridge/cv_bridge.h>
 #include <opencv2/imgproc.hpp>
 #include "camera_cpp/tensorrt_inference.hpp"
@@ -25,6 +26,7 @@ private:
     rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr subscription_;
     rclcpp::Publisher<vision_msgs::msg::Detection2DArray>::SharedPtr detection_pub_;
     rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr image_pub_;
+    rclcpp::Publisher<bin_boy_interfaces::msg::CameraPerformance>::SharedPtr performance_pub_;
 
     // TensorRT inference engine
     std::unique_ptr<TensorRTInference> trt_inference_;
@@ -37,6 +39,7 @@ private:
     bool use_tensorrt_;
     bool publish_annotated_image_;
     int detection_frame_skip_;
+    bool debug_logging_;
 
     // internal state
     size_t frame_counter_ = 0;
