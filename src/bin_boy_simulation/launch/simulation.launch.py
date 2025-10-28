@@ -24,7 +24,7 @@ def generate_launch_description():
     # Paths
     world_file = PathJoinSubstitution([pkg_simulation, 'worlds', 'test_indoor.world'])
     urdf_file = PathJoinSubstitution([pkg_simulation, 'urdf', 'bin_boy_gazebo.urdf.xacro'])
-    rviz_config = PathJoinSubstitution([pkg_description, 'rviz', 'display.rviz'])
+    rviz_config = PathJoinSubstitution([pkg_simulation, 'rviz', 'simulation.rviz'])
 
     # Launch arguments
     use_sim_time = LaunchConfiguration('use_sim_time', default='true')

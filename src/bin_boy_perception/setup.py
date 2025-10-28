@@ -24,6 +24,7 @@ setup(
     entry_points={
         'console_scripts': [
             'person_tracker = bin_boy_perception.person_tracker:main',
+            'mock_person_detector = bin_boy_perception.mock_person_detector:main',
         ],
     },
 )

@@ -19,6 +19,7 @@ import message_filters
 from enum import Enum
 from concurrent.futures import ThreadPoolExecutor
 from .color_histogram import ColorHistogram
+from .pid_controller import PersonFollowingPID
 
 
 class TrackingState(Enum):
@@ -54,6 +55,7 @@ class PersonTracker(Node):
         self.declare_parameter('adaptive_histogram_alpha', 0.15)  # histogram update rate (0=no adaptation, 1=full replacement)
         self.declare_parameter('id_memory_timeout', 30.0)  # seconds to remember person IDs (for re-identification)
         self.declare_parameter('debug_logging', False)  # enable verbose debug logging
+        self.declare_parameter('use_pid_control', True)  # Use PID instead of simple proportional control
 
         # Get parameters
         detection_topic = self.get_parameter('detection_topic').value
@@ -69,6 +71,7 @@ class PersonTracker(Node):
         self.reid_threshold = self.get_parameter('reid_color_threshold').value
         self.adaptive_alpha = self.get_parameter('adaptive_histogram_alpha').value
         self.debug_logging = self.get_parameter('debug_logging').value
+        self.use_pid = self.get_parameter('use_pid_control').value
 
         # State
         self.bridge = CvBridge()
@@ -94,6 +97,14 @@ class PersonTracker(Node):
         # Color histogram extractor for person re-identification
         # Jetson Nano 4GB optimized: 8×8×4 bins (256 total) for 8x speedup
         self.color_hist = ColorHistogram(h_bins=8, s_bins=8, v_bins=4)
+
+        # PID controller for smooth following (if enabled)
+        if self.use_pid:
+            self.pid_controller = PersonFollowingPID()
+            self.get_logger().info('Using PID control for smooth tracking')
+        else:
+            self.pid_controller = None
+            self.get_logger().info('Using simple proportional control')
 
         # Thread pool for parallel person processing (reduced for Jetson Nano 4GB)
         self.thread_pool = ThreadPoolExecutor(max_workers=2)
@@ -669,7 +680,7 @@ class PersonTracker(Node):
     def control_loop(self):
         """
         Generate velocity commands to follow person
-        Simple proportional controller
+        Supports both PID and simple proportional control
         """
         if not self.enable_following:
             return
@@ -678,6 +689,9 @@ class PersonTracker(Node):
         if self.tracking_state != TrackingState.TRACKING or self.target_person is None:
             # No active target, stop
             self.stop_robot()
+            # Reset PID when not tracking
+            if self.pid_controller:
+                self.pid_controller.reset()
             return
 
         # Estimate current person pose
@@ -685,31 +699,45 @@ class PersonTracker(Node):
 
         if distance is None:
             self.stop_robot()
+            if self.pid_controller:
+                self.pid_controller.reset()
             return
 
-        # Proportional control
-        # Linear velocity: approach if too far, back off if too close
+        # Calculate errors
         distance_error = distance - self.target_distance
-        linear_gain = 0.3
-        linear_vel = linear_gain * distance_error
 
-        # Clamp linear velocity
-        max_linear_vel = 0.5  # m/s
-        linear_vel = max(-max_linear_vel, min(linear_vel, max_linear_vel))
+        if self.use_pid and self.pid_controller:
+            # PID Control - smooth and stable
+            current_time = self.get_clock().now().nanoseconds / 1e9
+            linear_vel, angular_vel = self.pid_controller.compute_velocities(
+                angle_error=angle,
+                distance_error=distance_error,
+                current_time=current_time
+            )
+        else:
+            # Simple Proportional Control (fallback)
+            # Linear velocity
+            linear_gain = 0.3
+            linear_vel = linear_gain * distance_error
 
-        # Angular velocity: turn to face person
-        angular_gain = 1.0
-        angular_vel = angular_gain * angle
+            # Clamp linear velocity
+            max_linear_vel = 0.5  # m/s
+            linear_vel = max(-max_linear_vel, min(linear_vel, max_linear_vel))
 
-        # Clamp angular velocity
-        max_angular_vel = 1.0  # rad/s
-        angular_vel = max(-max_angular_vel, min(angular_vel, max_angular_vel))
+            # Angular velocity
+            # IMPORTANT: Negate angle because ROS convention is +Z = turn LEFT
+            angular_gain = 1.0
+            angular_vel = -angular_gain * angle
 
-        # Dead zones
-        if abs(distance_error) < 0.2:  # Within 20cm of target
-            linear_vel = 0.0
-        if abs(angle) < 0.1:  # Within ~6 degrees
-            angular_vel = 0.0
+            # Clamp angular velocity
+            max_angular_vel = 1.0  # rad/s
+            angular_vel = max(-max_angular_vel, min(angular_vel, max_angular_vel))
+
+            # Dead zones
+            if abs(distance_error) < 0.2:  # Within 20cm of target
+                linear_vel = 0.0
+            if abs(angle) < 0.1:  # Within ~6 degrees
+                angular_vel = 0.0
 
         # Publish velocity command
         cmd = Twist()
