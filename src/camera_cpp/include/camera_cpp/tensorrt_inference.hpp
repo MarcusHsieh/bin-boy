@@ -1,5 +1,5 @@
-#ifndef CSI_CAMERA_CPP__TENSORRT_INFERENCE_HPP_
-#define CSI_CAMERA_CPP__TENSORRT_INFERENCE_HPP_
+#ifndef CAMERA_CPP__TENSORRT_INFERENCE_HPP_
+#define CAMERA_CPP__TENSORRT_INFERENCE_HPP_
 
 #include <NvInfer.h>
 #include <NvOnnxParser.h>
@@ -11,7 +11,7 @@
 #include <fstream>
 #include <iostream>
 
-namespace csi_camera_cpp
+namespace camera_cpp
 {
 
 // Detection structure for output
@@ -129,6 +129,6 @@ private:
     float iou(const cv::Rect& box1, const cv::Rect& box2);
 };
 
-} // namespace csi_camera_cpp
+} // namespace camera_cpp
 
-#endif // CSI_CAMERA_CPP__TENSORRT_INFERENCE_HPP_
+#endif // CAMERA_CPP__TENSORRT_INFERENCE_HPP_

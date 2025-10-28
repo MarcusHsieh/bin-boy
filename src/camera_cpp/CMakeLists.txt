@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.8)
-project(csi_camera_cpp)
+project(camera_cpp)
 
 # Default to C++17
 if(NOT CMAKE_CXX_STANDARD)
@@ -32,7 +32,7 @@ link_directories(/usr/local/cuda/targets/aarch64-linux/lib)
 link_directories(/usr/lib/aarch64-linux-gnu)
 
 add_library(${PROJECT_NAME}_nodes SHARED
-  src/csi_camera_node.cpp
+  src/camera_node.cpp
   src/image_viewer_node.cpp
   src/person_detector_node.cpp
   src/tensorrt_inference.cpp
@@ -55,9 +55,9 @@ target_link_libraries(${PROJECT_NAME}_nodes
 )
 
 rclcpp_components_register_nodes(${PROJECT_NAME}_nodes
-  "csi_camera_cpp::CSICameraNode"
-  "csi_camera_cpp::ImageViewerNode"
-  "csi_camera_cpp::PersonDetectorNode"
+  "camera_cpp::CameraNode"
+  "camera_cpp::ImageViewerNode"
+  "camera_cpp::PersonDetectorNode"
 )
 
 install(TARGETS ${PROJECT_NAME}_nodes
@@ -80,6 +80,16 @@ install(DIRECTORY launch
 
 install(DIRECTORY models/
   DESTINATION share/${PROJECT_NAME}/models
+)
+
+install(DIRECTORY scripts/
+  DESTINATION share/${PROJECT_NAME}/scripts
+)
+
+# Install calibration script as executable for ros2 run
+install(PROGRAMS
+  scripts/calibrate_distortion
+  DESTINATION lib/${PROJECT_NAME}
 )
 
 if(BUILD_TESTING)

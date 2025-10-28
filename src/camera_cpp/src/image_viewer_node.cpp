@@ -1,27 +1,27 @@
-#include "csi_camera_cpp/image_viewer_node.hpp" 
+#include "camera_cpp/image_viewer_node.hpp"
 
 #include <rclcpp/rclcpp.hpp>
 #include <rclcpp_components/register_node_macro.hpp>
 #include <sensor_msgs/msg/image.hpp>
 #include <sensor_msgs/image_encodings.hpp>
 #include <cv_bridge/cv_bridge.h>
-#include <opencv2/highgui.hpp> 
-#include <opencv2/imgproc.hpp> 
+#include <opencv2/highgui.hpp>
+#include <opencv2/imgproc.hpp>
 
 #include <string>
-#include <memory> 
-#include <algorithm> 
+#include <memory>
+#include <algorithm>
 
 // Default values for parameters
 const std::string DEFAULT_VIEWER_WINDOW_NAME = "Image Viewer";
-const bool DEFAULT_ENABLE_VIEWER_CROP = false; 
+const bool DEFAULT_ENABLE_VIEWER_CROP = false;
 const int DEFAULT_VIEWER_CROP_X = 0;
 const int DEFAULT_VIEWER_CROP_Y = 0;
 const int DEFAULT_VIEWER_CROP_WIDTH = 0;  // 0 means use full width from x_offset
 const int DEFAULT_VIEWER_CROP_HEIGHT = 0; // 0 means full height from y_offset
 
 
-namespace csi_camera_cpp
+namespace camera_cpp
 {
 
 ImageViewerNode::ImageViewerNode(const rclcpp::NodeOptions & options)
@@ -101,7 +101,7 @@ void ImageViewerNode::image_callback(sensor_msgs::msg::Image::UniquePtr msg)
         RCLCPP_ERROR(this->get_logger(), "cv_bridge exception: %s", e.what());
         return;
     }
-    
+
     if (!cv_ptr || cv_ptr->image.empty()) {
         RCLCPP_WARN(this->get_logger(), "cv_bridge conversion resulted in null or empty image.");
         return;
@@ -131,9 +131,7 @@ void ImageViewerNode::image_callback(sensor_msgs::msg::Image::UniquePtr msg)
             (effective_crop_y + effective_crop_height) <= full_frame.rows)
         {
             cv::Rect roi(effective_crop_x, effective_crop_y, effective_crop_width, effective_crop_height);
-            frame_to_display = full_frame(roi); // This creates a view. For imshow, it's fine.
-                                                // If you were to modify frame_to_display AND wanted to keep full_frame original,
-                                                // you'd use full_frame(roi).clone();
+            frame_to_display = full_frame(roi);
             RCLCPP_DEBUG(this->get_logger(), "Displaying cropped frame: %dx%d", frame_to_display.cols, frame_to_display.rows);
         } else {
             RCLCPP_WARN_ONCE(this->get_logger(), "Invalid crop parameters for viewer. Displaying full frame. Full: %dx%d, Crop x,y,w,h: %d,%d,%d,%d",
@@ -163,12 +161,10 @@ void ImageViewerNode::image_callback(sensor_msgs::msg::Image::UniquePtr msg)
             RCLCPP_INFO(this->get_logger(), "Quit key pressed. Closing window '%s'.", window_name_.c_str());
             cv::destroyWindow(window_name_);
             window_active_ = false;
-            // To stop the node itself:
-            // if (rclcpp::ok()) { rclcpp::shutdown(); }
         }
     }
 }
 
-} // namespace csi_camera_cpp
+} // namespace camera_cpp
 
-RCLCPP_COMPONENTS_REGISTER_NODE(csi_camera_cpp::ImageViewerNode)
+RCLCPP_COMPONENTS_REGISTER_NODE(camera_cpp::ImageViewerNode)

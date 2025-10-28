@@ -1,9 +1,9 @@
 <?xml version="1.0"?>
 <?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
 <package format="3">
-  <name>csi_camera_cpp</name>
+  <name>camera_cpp</name>
   <version>0.0.0</version>
-  <description>C++ ROS2 package to publish CSI camera stream using GStreamer on Jetson Nano</description>
+  <description>C++ ROS2 package supporting both CSI and USB cameras with TensorRT person detection on Jetson Nano</description>
   <maintainer email="marcus.j.hsieh@gmail.com">mj</maintainer>
   <license>MIT</license>
 

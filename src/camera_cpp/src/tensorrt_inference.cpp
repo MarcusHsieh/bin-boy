@@ -1,8 +1,8 @@
-#include "csi_camera_cpp/tensorrt_inference.hpp"
+#include "camera_cpp/tensorrt_inference.hpp"
 #include <chrono>
 #include <algorithm>
 
-namespace csi_camera_cpp
+namespace camera_cpp
 {
 
 TensorRTInference::TensorRTInference()
@@ -682,4 +682,4 @@ float TensorRTInference::iou(const cv::Rect& box1, const cv::Rect& box2)
     return static_cast<float>(intersection_area) / static_cast<float>(union_area);
 }
 
-} // namespace csi_camera_cpp
+} // namespace camera_cpp

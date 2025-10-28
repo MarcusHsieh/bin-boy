@@ -1,4 +1,4 @@
-#include "csi_camera_cpp/person_detector_node.hpp"
+#include "camera_cpp/person_detector_node.hpp"
 #include <rclcpp_components/register_node_macro.hpp>
 #include <opencv2/highgui.hpp>
 #include <sensor_msgs/image_encodings.hpp>
@@ -7,7 +7,7 @@
 #include <ament_index_cpp/get_package_share_directory.hpp>
 #include <chrono>
 
-namespace csi_camera_cpp
+namespace camera_cpp
 {
 
 PersonDetectorNode::PersonDetectorNode(const rclcpp::NodeOptions & options)
@@ -86,7 +86,7 @@ void PersonDetectorNode::load_model()
 
     std::string package_share_path;
     try {
-        package_share_path = ament_index_cpp::get_package_share_directory("csi_camera_cpp");
+        package_share_path = ament_index_cpp::get_package_share_directory("camera_cpp");
         RCLCPP_INFO(this->get_logger(), "Package share path: %s", package_share_path.c_str());
     } catch (const std::exception & e) {
         RCLCPP_ERROR(this->get_logger(), "Error finding package share directory: %s", e.what());
@@ -140,7 +140,7 @@ void PersonDetectorNode::load_model()
             RCLCPP_ERROR(this->get_logger(), "  1. Pre-built TensorRT engine: %s", abs_engine_path.c_str());
             RCLCPP_ERROR(this->get_logger(), "  2. ONNX model file: %s", abs_onnx_path.c_str());
             RCLCPP_ERROR(this->get_logger(), "\nTo download YOLOv5n model:");
-            RCLCPP_ERROR(this->get_logger(), "  cd ~/venus2025/src/csi_camera_cpp/scripts");
+            RCLCPP_ERROR(this->get_logger(), "  cd ~/bin-boy/src/camera_cpp/scripts");
             RCLCPP_ERROR(this->get_logger(), "  python3 download_yolov5n.py");
             throw std::runtime_error("No valid model files found for TensorRT inference");
         }
@@ -166,15 +166,26 @@ void PersonDetectorNode::image_callback(sensor_msgs::msg::Image::UniquePtr msg)
     bool skip_detection = (detection_frame_skip_ > 0) && (frame_counter_ % (detection_frame_skip_ + 1) != 0);
 
     cv_bridge::CvImagePtr cv_ptr;
+    cv::Mat frame;
+
     try {
-        // ROS Image msg -> OpenCV image
-        cv_ptr = cv_bridge::toCvCopy(*msg, sensor_msgs::image_encodings::BGR8);
+        // ROS Image msg -> OpenCV image (primary: BGR8 for color tracking)
+        if (msg->encoding == sensor_msgs::image_encodings::BGR8) {
+            cv_ptr = cv_bridge::toCvCopy(*msg, sensor_msgs::image_encodings::BGR8);
+            frame = cv_ptr->image;
+        } else if (msg->encoding == sensor_msgs::image_encodings::MONO8) {
+            // Legacy support: convert mono8 to BGR if needed
+            cv_ptr = cv_bridge::toCvCopy(*msg, sensor_msgs::image_encodings::MONO8);
+            cv::cvtColor(cv_ptr->image, frame, cv::COLOR_GRAY2BGR);
+        } else {
+            RCLCPP_ERROR(this->get_logger(), "Unsupported encoding: %s", msg->encoding.c_str());
+            return;
+        }
     } catch (const cv_bridge::Exception& e) {
         RCLCPP_ERROR(this->get_logger(), "CV Bridge error: %s", e.what());
         return;
     }
 
-    cv::Mat frame = cv_ptr->image;
     if (frame.empty()) {
         RCLCPP_WARN(this->get_logger(), "Received empty frame.");
         return;
@@ -247,6 +258,6 @@ void PersonDetectorNode::image_callback(sensor_msgs::msg::Image::UniquePtr msg)
     }
 }
 
-} // namespace csi_camera_cpp
+} // namespace camera_cpp
 
-RCLCPP_COMPONENTS_REGISTER_NODE(csi_camera_cpp::PersonDetectorNode)
+RCLCPP_COMPONENTS_REGISTER_NODE(camera_cpp::PersonDetectorNode)

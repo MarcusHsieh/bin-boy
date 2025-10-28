@@ -1,17 +1,17 @@
-#ifndef CSI_CAMERA_CPP__PERSON_DETECTOR_NODE_HPP_
-#define CSI_CAMERA_CPP__PERSON_DETECTOR_NODE_HPP_
+#ifndef CAMERA_CPP__PERSON_DETECTOR_NODE_HPP_
+#define CAMERA_CPP__PERSON_DETECTOR_NODE_HPP_
 
 #include <rclcpp/rclcpp.hpp>
 #include <sensor_msgs/msg/image.hpp>
 #include <vision_msgs/msg/detection2_d_array.hpp>
 #include <cv_bridge/cv_bridge.h>
 #include <opencv2/imgproc.hpp>
-#include "csi_camera_cpp/tensorrt_inference.hpp"
+#include "camera_cpp/tensorrt_inference.hpp"
 #include <memory>
 #include <string>
 #include <vector>
 
-namespace csi_camera_cpp
+namespace camera_cpp
 {
 
 class PersonDetectorNode : public rclcpp::Node
@@ -47,6 +47,6 @@ private:
     void image_callback(sensor_msgs::msg::Image::UniquePtr msg);
 };
 
-} // namespace csi_camera_cpp
+} // namespace camera_cpp
 
-#endif // CSI_CAMERA_CPP__PERSON_DETECTOR_NODE_HPP_
+#endif // CAMERA_CPP__PERSON_DETECTOR_NODE_HPP_
