@@ -36,7 +36,7 @@ costmap_common_params:
   # Inflation layer parameters
   inflation_layer:
     enabled: true
-    inflation_radius: 0.35   # Inflation around marked obstacles
+    inflation_radius: 0.30   # OPTIMIZED: Reduced from 0.35 (-13% = tighter paths)
     cost_scaling_factor: 3.0 # How rapidly cost falls off
 
   # Static layer (only for global costmap)

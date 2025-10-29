@@ -1,0 +1,42 @@
+# Patrol Square Waypoint Route
+#
+# A simple 1m x 1m square patrol route demonstrating waypoint navigation.
+# The robot will navigate to each waypoint in sequence, rotating to face
+# the direction of travel at each corner.
+#
+# Coordinate system: 'map' frame (global coordinates)
+# Units: meters for x/y, radians for theta
+#
+# Usage:
+#   ros2 run bin_boy_navigation waypoint_sender config/waypoints/patrol_square.yaml
+
+waypoints:
+  # Waypoint 0: Start - Move forward along +X axis
+  - x: 1.0
+    y: 0.0
+    theta: 0.0  # Facing east (0 radians)
+
+  # Waypoint 1: Northeast corner - Turn to face +Y
+  - x: 1.0
+    y: 1.0
+    theta: 1.5708  # Facing north (90 degrees = π/2 radians)
+
+  # Waypoint 2: Northwest corner - Turn to face -X
+  - x: 0.0
+    y: 1.0
+    theta: 3.1416  # Facing west (180 degrees = π radians)
+
+  # Waypoint 3: Southwest corner - Turn to face -Y
+  - x: 0.0
+    y: 0.0
+    theta: -1.5708  # Facing south (-90 degrees = -π/2 radians)
+
+# Expected behavior:
+# 1. Robot navigates from origin to (1, 0), facing east
+# 2. Robot navigates to (1, 1), turns to face north
+# 3. Robot navigates to (0, 1), turns to face west
+# 4. Robot navigates to (0, 0), turns to face south
+# 5. Route completes, robot holds final position
+
+# Note: These are relative to the map origin. Adjust coordinates based on
+# your actual map layout and desired patrol area.

@@ -32,6 +32,29 @@ source install/setup.bash
 
 ## Quick Start
 
+### Navigation & Simulation
+
+> Run Simulation with Navigation (Localization Mode)
+```bash
+bash launch_localization.sh map_20251028_203407
+```
+
+> Create New Map (SLAM Mode)
+```bash
+ros2 launch bin_boy_navigation slam_navigation.launch.py use_sim_time:=true
+# Drive robot around, then save map:
+ros2 run nav2_map_server map_saver_cli -f ~/bin-boy/maps/my_map
+```
+
+> Test Global Localization (Kidnapped Robot)
+```bash
+# In Gazebo: drag robot to new location
+ros2 service call /reinitialize_global_localization std_srvs/srv/Empty
+# Robot will relocalize within 10-30 seconds with motion
+```
+
+### Sensors & Control
+
 > Camera with Person Detection (CSI - Recommended)
 ```bash
 # Calibrated for Waveshare IMX219-200 with barrel correction

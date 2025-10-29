@@ -14,6 +14,7 @@ setup(
         ('share/' + package_name, ['package.xml']),
         (os.path.join('share', package_name, 'launch'), glob('launch/*.launch.py')),
         (os.path.join('share', package_name, 'config'), glob('config/*.yaml')),
+        (os.path.join('share', package_name, 'config/waypoints'), glob('config/waypoints/*.yaml')),
         (os.path.join('share', package_name, 'behavior_trees'), glob('behavior_trees/*.xml')),
     ],
     install_requires=['setuptools'],
@@ -25,6 +26,7 @@ setup(
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
+            'waypoint_sender = bin_boy_navigation.waypoint_sender:main',
         ],
     },
 )

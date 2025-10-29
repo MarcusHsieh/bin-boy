@@ -51,10 +51,10 @@ local_costmap:
       inflation_layer:
         plugin: "nav2_costmap_2d::InflationLayer"
         enabled: true
-        inflation_radius: 0.35
+        inflation_radius: 0.30      # OPTIMIZED: Reduced from 0.35
         cost_scaling_factor: 3.0
         inflate_unknown: false
-        inflate_around_unknown: false
+        inflate_around_unknown: true   # OPTIMIZED: Consistency fix (match global costmap)
 
       # Always send full costmap
       always_send_full_costmap: false
