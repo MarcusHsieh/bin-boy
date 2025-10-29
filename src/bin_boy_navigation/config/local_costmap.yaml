@@ -1,0 +1,60 @@
+# Local Costmap Parameters
+# Rolling window costmap for real-time obstacle avoidance
+
+local_costmap:
+  local_costmap:
+    ros__parameters:
+      # Update rates
+      update_frequency: 5.0    # Hz - costmap update rate
+      publish_frequency: 2.0   # Hz - visualization update rate
+
+      # Frame configuration
+      global_frame: odom
+      robot_base_frame: base_footprint
+      use_sim_time: true
+
+      # Rolling window configuration
+      rolling_window: true
+      width: 5               # meters
+      height: 5              # meters
+      resolution: 0.05       # meters per pixel (5cm)
+
+      # Robot footprint
+      robot_radius: 0.20
+      footprint_padding: 0.01
+
+      # Plugin configuration
+      plugins: ["obstacle_layer", "inflation_layer"]
+
+      # Obstacle layer - uses LIDAR scans
+      obstacle_layer:
+        plugin: "nav2_costmap_2d::ObstacleLayer"
+        enabled: true
+        observation_sources: scan
+
+        # LIDAR configuration
+        scan:
+          topic: /scan
+          sensor_frame: base_laser
+          observation_persistence: 0.0  # Don't persist (real-time)
+          expected_update_rate: 0.0     # No timeout
+          data_type: "LaserScan"
+          min_obstacle_height: 0.0
+          max_obstacle_height: 2.0
+          inf_is_valid: false
+          marking: true
+          clearing: true
+          obstacle_range: 5.0    # Mark obstacles within 5m
+          raytrace_range: 6.0    # Clear space up to 6m
+
+      # Inflation layer
+      inflation_layer:
+        plugin: "nav2_costmap_2d::InflationLayer"
+        enabled: true
+        inflation_radius: 0.35
+        cost_scaling_factor: 3.0
+        inflate_unknown: false
+        inflate_around_unknown: false
+
+      # Always send full costmap
+      always_send_full_costmap: false
