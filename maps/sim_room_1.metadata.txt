@@ -1,0 +1,4 @@
+Saved: Tue 28 Oct 2025 08:12:59 PM PDT
+Resolution: 0.05
+Origin: origin: [-4.95, -4.95, 0]
+Map size: 198x198 pixels
