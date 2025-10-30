@@ -17,10 +17,10 @@ amcl:
     robot_model_type: "omnidirectional"
 
     # Particle filter parameters
-    min_particles: 1000
-    max_particles: 5000
-    recovery_alpha_slow: 0.001
-    recovery_alpha_fast: 0.1
+    min_particles: 500
+    max_particles: 2000
+    recovery_alpha_slow: 0.0
+    recovery_alpha_fast: 0.0
 
     # Update parameters
     update_min_d: 0.15        # Min translation before update (m)
@@ -45,7 +45,7 @@ amcl:
     odom_alpha5: 0.2          # Strafe noise (omnidirectional)
 
     # Initial pose parameters
-    set_initial_pose: true  # Auto-initialize at (0,0,0) - use "2D Pose Estimate" in RViz to correct if needed
+    set_initial_pose: true
     initial_pose:
       x: 0.0
       y: 0.0

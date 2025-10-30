@@ -144,7 +144,7 @@ recoveries_server:
     # Spin recovery - rotate in place
     spin:
       simulate_ahead_time: 2.0
-      max_rotational_vel: 0.8  # OPTIMIZED: Increased from 0.5 (+60% faster recovery)
+      max_rotational_vel: 0.5
       min_rotational_vel: 0.2
       rotational_acc_lim: 1.0
 
@@ -208,10 +208,10 @@ local_costmap:
       inflation_layer:
         plugin: "nav2_costmap_2d::InflationLayer"
         enabled: true
-        inflation_radius: 0.30        # OPTIMIZED: Reduced from 0.35
+        inflation_radius: 0.35
         cost_scaling_factor: 3.0
         inflate_unknown: false
-        inflate_around_unknown: true  # OPTIMIZED: Consistency fix
+        inflate_around_unknown: false
 
       always_send_full_costmap: false
 
@@ -242,7 +242,7 @@ global_costmap:
       inflation_layer:
         plugin: "nav2_costmap_2d::InflationLayer"
         enabled: true
-        inflation_radius: 0.30  # OPTIMIZED: Reduced from 0.35
+        inflation_radius: 0.35
         cost_scaling_factor: 3.0
         inflate_unknown: false
         inflate_around_unknown: true

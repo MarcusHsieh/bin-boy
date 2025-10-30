@@ -85,13 +85,6 @@
         <ros>
           <namespace>/</namespace>
           <remapping>~/out:=scan</remapping>
-          <qos>
-            <topic name="scan">
-              <publisher>
-                <reliability>best_effort</reliability>
-              </publisher>
-            </topic>
-          </qos>
         </ros>
         <output_type>sensor_msgs/LaserScan</output_type>
         <frame_name>base_laser</frame_name>

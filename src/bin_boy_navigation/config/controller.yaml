@@ -23,20 +23,20 @@ controller_server:
     general_goal_checker:
       stateful: true
       plugin: "nav2_controller::SimpleGoalChecker"
-      xy_goal_tolerance: 0.10      # meters (10cm) - OPTIMIZED for precision
-      yaw_goal_tolerance: 0.15     # radians (~8.6 degrees) - OPTIMIZED for precision
+      xy_goal_tolerance: 0.15      # meters (15cm)
+      yaw_goal_tolerance: 0.2      # radians (~11 degrees)
 
     # DWB Local Planner - OMNIDIRECTIONAL CONFIGURATION
     FollowPath:
       plugin: "dwb_core::DWBLocalPlanner"
       debug_trajectory_details: false
-      min_vel_x: -0.6
-      min_vel_y: -0.6        # OMNIDIRECTIONAL: Enable lateral motion
-      max_vel_x: 0.6         # OPTIMIZED: Increased from 0.5 (+20% speed)
-      max_vel_y: 0.6         # OPTIMIZED: Increased from 0.5 (+20% speed)
+      min_vel_x: -0.5
+      min_vel_y: -0.5        # OMNIDIRECTIONAL: Enable lateral motion
+      max_vel_x: 0.5
+      max_vel_y: 0.5         # OMNIDIRECTIONAL: Enable lateral motion
       max_vel_theta: 1.0
       min_speed_xy: 0.0
-      max_speed_xy: 0.6      # OPTIMIZED: Must match max_vel_x/y
+      max_speed_xy: 0.5
       min_speed_theta: 0.0
 
       # Acceleration limits
@@ -49,11 +49,11 @@ controller_server:
 
       # Velocity sampling - OMNIDIRECTIONAL
       vx_samples: 15         # Sample forward/backward velocities
-      vy_samples: 20         # OPTIMIZED: Increased from 15 (+33% lateral quality)
+      vy_samples: 15         # Sample lateral velocities (CRITICAL for holonomic)
       vtheta_samples: 20     # Sample rotational velocities
 
       # Simulation parameters
-      sim_time: 2.0          # OPTIMIZED: Increased from 1.7 (+18% lookahead)
+      sim_time: 1.7          # seconds to simulate trajectories
       discretize_by_time: false
       time_granularity: 0.5
       linear_granularity: 0.05
