@@ -1,11 +1,16 @@
 #!/usr/bin/env python3
 """
 Launch Gazebo simulation with bin_boy robot
+
+Mapping options:
+  slam:=true - Dynamic SLAM mapping (best for new/changing environments)
+  localization:=true - Static map localization with AMCL (best for known environments)
+  (default: neither - basic odometry only)
 """
 
 import os
 from launch import LaunchDescription
-from launch.actions import DeclareLaunchArgument, ExecuteProcess, IncludeLaunchDescription
+from launch.actions import DeclareLaunchArgument, ExecuteProcess, IncludeLaunchDescription, TimerAction
 from launch.conditions import IfCondition
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import LaunchConfiguration, Command, PathJoinSubstitution
@@ -21,6 +26,13 @@ def generate_launch_description():
     pkg_description = get_package_share_directory('bin_boy_description')
     pkg_gazebo_ros = get_package_share_directory('gazebo_ros')
 
+    # Try to get navigation package (may not be available)
+    try:
+        pkg_navigation = get_package_share_directory('bin_boy_navigation')
+        nav_available = True
+    except:
+        nav_available = False
+
     # Paths
     world_file = PathJoinSubstitution([pkg_simulation, 'worlds', 'test_indoor.world'])
     urdf_file = PathJoinSubstitution([pkg_simulation, 'urdf', 'bin_boy_gazebo.urdf.xacro'])
@@ -31,6 +43,8 @@ def generate_launch_description():
     gui = LaunchConfiguration('gui', default='true')
     rviz = LaunchConfiguration('rviz', default='true')
     world = LaunchConfiguration('world', default=world_file)
+    enable_localization = LaunchConfiguration('localization', default='false')
+    enable_slam = LaunchConfiguration('slam', default='false')
 
     declare_use_sim_time = DeclareLaunchArgument(
         'use_sim_time',
@@ -54,6 +68,18 @@ def generate_launch_description():
         'world',
         default_value=world_file,
         description='Path to world file'
+    )
+
+    declare_localization = DeclareLaunchArgument(
+        'localization',
+        default_value='false',
+        description='Enable AMCL localization with map server (requires bin_boy_navigation package)'
+    )
+
+    declare_slam = DeclareLaunchArgument(
+        'slam',
+        default_value='false',
+        description='Enable SLAM Toolbox for dynamic mapping (best for person following)'
     )
 
     # Process URDF
@@ -130,14 +156,83 @@ def generate_launch_description():
     # - Keeps robot stable (locks Z, roll, pitch)
     # - Allows planar motion (X, Y, yaw)
 
+    # Localization/SLAM nodes (optional - only if bin_boy_navigation is available)
+    mapping_nodes = []
+    if nav_available:
+        # Config files
+        nav2_params = os.path.join(pkg_navigation, 'config', 'nav2_params.yaml')
+        amcl_params = os.path.join(pkg_navigation, 'config', 'amcl_params.yaml')
+        slam_config = os.path.join(pkg_simulation, 'config', 'slam_toolbox.yaml')
+
+        # AMCL Localization (static map)
+        # Map Server
+        map_server = Node(
+            package='nav2_map_server',
+            executable='map_server',
+            name='map_server',
+            output='screen',
+            parameters=[
+                nav2_params,
+                {'use_sim_time': use_sim_time}
+            ],
+            condition=IfCondition(enable_localization)
+        )
+
+        # AMCL Localization
+        amcl = Node(
+            package='nav2_amcl',
+            executable='amcl',
+            name='amcl',
+            output='screen',
+            parameters=[amcl_params],
+            condition=IfCondition(enable_localization)
+        )
+
+        # Lifecycle Manager for map_server and AMCL
+        lifecycle_manager_localization = Node(
+            package='nav2_lifecycle_manager',
+            executable='lifecycle_manager',
+            name='lifecycle_manager_localization',
+            output='screen',
+            parameters=[
+                {'use_sim_time': use_sim_time},
+                {'autostart': True},
+                {'node_names': ['map_server', 'amcl']}
+            ],
+            condition=IfCondition(enable_localization)
+        )
+
+        # Delay lifecycle_manager to ensure map_server and AMCL are ready
+        delayed_localization = TimerAction(
+            period=3.0,
+            actions=[lifecycle_manager_localization]
+        )
+
+        # SLAM Toolbox (dynamic mapping)
+        slam_node = Node(
+            package='slam_toolbox',
+            executable='sync_slam_toolbox_node',
+            name='slam_toolbox',
+            output='screen',
+            parameters=[
+                slam_config,
+                {'use_sim_time': use_sim_time}
+            ],
+            condition=IfCondition(enable_slam)
+        )
+
+        mapping_nodes = [map_server, amcl, delayed_localization, slam_node]
+
     return LaunchDescription([
         declare_use_sim_time,
         declare_gui,
         declare_rviz,
         declare_world,
+        declare_localization,
+        declare_slam,
         robot_state_publisher_node,
         gzserver,
         gzclient,
         spawn_robot,
         rviz_node
-    ])
+    ] + mapping_nodes)

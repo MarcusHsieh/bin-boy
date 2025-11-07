@@ -8,13 +8,20 @@ Gazebo ground truth.
 
 Usage:
   ros2 launch bin_boy_perception sim_person_tracking.launch.py enable_following:=true
+
+  With Nav2 navigation (recommended):
+  ros2 launch bin_boy_perception sim_person_tracking.launch.py enable_following:=true enable_nav2:=true
 """
 
+import os
 import launch
 from launch import LaunchDescription
-from launch.actions import DeclareLaunchArgument
-from launch.substitutions import LaunchConfiguration
+from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription
+from launch.conditions import IfCondition
+from launch.launch_description_sources import PythonLaunchDescriptionSource
+from launch.substitutions import LaunchConfiguration, PathJoinSubstitution
 from launch_ros.actions import Node
+from ament_index_python.packages import get_package_share_directory
 
 
 def generate_launch_description():
@@ -22,11 +29,24 @@ def generate_launch_description():
     Generate launch description for simulation person tracking
     """
 
+    # Try to get navigation package (may not be available)
+    try:
+        pkg_navigation = get_package_share_directory('bin_boy_navigation')
+        nav_available = True
+    except:
+        nav_available = False
+
     # Launch arguments
     enable_following_arg = DeclareLaunchArgument(
         'enable_following',
         default_value='false',
         description='Enable robot following behavior (publishes cmd_vel)'
+    )
+
+    enable_nav2_arg = DeclareLaunchArgument(
+        'enable_nav2',
+        default_value='false',
+        description='Enable Nav2 navigation stack (requires bin_boy_navigation package)'
     )
 
     enable_color_tracking_arg = DeclareLaunchArgument(
@@ -98,9 +118,29 @@ def generate_launch_description():
         ]
     )
 
+    # Nav2 navigation stack (optional)
+    nav2_nodes = []
+    if nav_available:
+        use_sim_time = LaunchConfiguration('use_sim_time', default='true')
+        enable_nav2 = LaunchConfiguration('enable_nav2')
+
+        # Include Navigation stack
+        navigation_launch = IncludeLaunchDescription(
+            PythonLaunchDescriptionSource(
+                PathJoinSubstitution([pkg_navigation, 'launch', 'navigation.launch.py'])
+            ),
+            launch_arguments={
+                'use_sim_time': 'true'
+            }.items(),
+            condition=IfCondition(enable_nav2)
+        )
+
+        nav2_nodes = [navigation_launch]
+
     return LaunchDescription([
         # Launch arguments
         enable_following_arg,
+        enable_nav2_arg,
         enable_color_tracking_arg,
         min_confidence_arg,
         target_distance_arg,
@@ -109,4 +149,4 @@ def generate_launch_description():
         # Nodes
         mock_detector_node,
         person_tracker_node,
-    ])
+    ] + nav2_nodes)
