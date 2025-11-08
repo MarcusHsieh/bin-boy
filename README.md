@@ -32,7 +32,7 @@ source install/setup.bash
 
 ## Quick Start
 
-> Camera with Person Detection (CSI - Recommended)
+> Camera with Person Detection (CSI)
 ```bash
 # Calibrated for Waveshare IMX219-200 with barrel correction
 ros2 launch camera_cpp camera_ipc.launch.py camera_type:=csi
@@ -43,9 +43,14 @@ ros2 launch camera_cpp camera_ipc.launch.py camera_type:=csi
 ros2 launch camera_cpp camera_ipc.launch.py camera_type:=usb device_id:=0
 ```
 
-> 2D LIDAR
+> 2D LIDAR (raw)
 ```bash
 ros2 launch ldlidar_sl_ros2 ld14p.launch.py
+```
+
+> 2D LIDAR (filtered scan ignoring points <=150mm from base_laser)
+```bash
+ros2 launch ldlidar_sl_ros2 ld14p_filtered.launch.py
 ```
 
 > Full Control System (Motors + IMU + EKF)
