@@ -9,7 +9,7 @@ def generate_launch_description():
     return LaunchDescription([
         DeclareLaunchArgument(
             'serial_port',
-            default_value='/dev/ttyUSB0',
+            default_value='/dev/ttyACM0',
             description='Serial port for motor driver board'
         ),
 
@@ -28,7 +28,7 @@ def generate_launch_description():
                 'serial_port': LaunchConfiguration('serial_port'),
                 'baudrate': LaunchConfiguration('baudrate'),
                 'wheel_ids': [1, 2, 3],
-                'wheel_radius': 0.05,
+                'wheel_radius': 0.07,
                 'robot_radius': 0.15,
                 'publish_rate': 50.0,
                 'publish_tf': True,

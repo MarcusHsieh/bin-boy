@@ -3,7 +3,7 @@
 kiwi_drive_node:
   ros__parameters:
     # Serial communication
-    serial_port: '/dev/ttyUSB0'
+    serial_port: '/dev/ttyTHS1'  # Jetson Nano GPIO UART (Pin 8=TX, Pin 10=RX)
     baudrate: 1000000
 
     # Servo IDs (must match physical servo IDs)

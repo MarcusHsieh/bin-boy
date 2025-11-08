@@ -14,7 +14,7 @@ import math
 import time
 from typing import List, Optional
 
-from bin_boy_control.sts3215_driver import STS3215, KiwiDriveController
+from bin_boy_control.sts3215_driver import KiwiDriveController
 
 
 class KiwiDriveNode(Node):
@@ -22,7 +22,7 @@ class KiwiDriveNode(Node):
         super().__init__('kiwi_drive_node')
 
         # Declare parameters
-        self.declare_parameter('serial_port', '/dev/ttyUSB0')
+        self.declare_parameter('serial_port', '/dev/ttyACM0')
         self.declare_parameter('baudrate', 1000000)
         self.declare_parameter('wheel_ids', [1, 2, 3])  # [front, left_rear, right_rear]
         self.declare_parameter('wheel_radius', 0.05)  # meters
@@ -45,8 +45,7 @@ class KiwiDriveNode(Node):
 
         # Initialize hardware driver
         try:
-            self.driver = STS3215(serial_port, baudrate)
-            self.controller = KiwiDriveController(self.driver, wheel_ids)
+            self.controller = KiwiDriveController(wheel_ids, baudrate, serial_port)
             self.get_logger().info('Successfully connected to servos')
         except Exception as e:
             self.get_logger().error(f'Failed to connect to servos: {e}')
@@ -87,104 +86,115 @@ class KiwiDriveNode(Node):
         vy = msg.linear.y
         omega = msg.angular.z
 
+        self.get_logger().info(f'[DEBUG cmd_vel_callback] Received cmd_vel: vx={vx}, vy={vy}, omega={omega}')
+
         # Send to hardware
         try:
+            self.get_logger().info(f'[DEBUG cmd_vel_callback] Calling set_velocity with 3 params: vx={vx}, vy={vy}, omega={omega}')
             self.controller.set_velocity(vx, vy, omega)
         except Exception as e:
             self.get_logger().error(f'Failed to set velocity: {e}')
+            import traceback
+            self.get_logger().error(f'Traceback: {traceback.format_exc()}')
 
     def update_odometry(self):
         """Read encoders and update odometry"""
-        try:
+        # try:
             # Read current encoder positions
-            positions = self.controller.read_wheel_positions()
+        positions = []
+        speeds = []
+        for i in range(1, 4):
+            position, speed = self.controller.read_wheel_status(i)
+            positions.append(position)
+            speeds.append(speed)
 
-            if None in positions:
-                self.get_logger().warn('Failed to read some encoder positions')
-                return
 
-            current_time = self.get_clock().now()
+        if None in positions:
+            self.get_logger().warn('Failed to read some encoder positions')
+            return
 
-            # Initialize on first read
-            if None in self.last_encoder_positions:
-                self.last_encoder_positions = positions
-                self.last_time = current_time
-                return
+        current_time = self.get_clock().now()
 
-            # Calculate time delta
-            dt = (current_time - self.last_time).nanoseconds / 1e9
-            if dt <= 0:
-                return
-
-            # Calculate encoder deltas (handle wraparound)
-            deltas = []
-            for i in range(3):
-                delta = positions[i] - self.last_encoder_positions[i]
-
-                # Handle wraparound
-                if delta > self.encoder_resolution / 2:
-                    delta -= self.encoder_resolution
-                elif delta < -self.encoder_resolution / 2:
-                    delta += self.encoder_resolution
-
-                deltas.append(delta)
-
-            # Convert encoder ticks to radians
-            wheel_angular_displacements = [
-                (delta / self.encoder_resolution) * 2 * math.pi
-                for delta in deltas
-            ]
-
-            # Convert to linear wheel displacements
-            wheel_linear_displacements = [
-                displacement * self.wheel_radius
-                for displacement in wheel_angular_displacements
-            ]
-
-            # Kiwi drive forward kinematics
-            # Convert wheel displacements to robot displacement
-            # Inverse of: wheel = (-vx*sin(theta) + vy*cos(theta) + omega*R) / r
-
-            d_front = wheel_linear_displacements[0]
-            d_left = wheel_linear_displacements[1]
-            d_right = wheel_linear_displacements[2]
-
-            # Solve for vx, vy, omega
-            # Using least squares solution for overdetermined system
-            # This is a simplified version - you may want to tune this
-
-            d_x = -d_front / 2 + d_left / 2 + d_right / 2
-            d_y = d_front - d_left / 2 - d_right / 2
-            d_theta = (d_front + d_left + d_right) / (3 * self.robot_radius)
-
-            # Update pose (dead reckoning)
-            delta_x = d_x * math.cos(self.theta) - d_y * math.sin(self.theta)
-            delta_y = d_x * math.sin(self.theta) + d_y * math.cos(self.theta)
-
-            self.x += delta_x
-            self.y += delta_y
-            self.theta += d_theta
-
-            # Normalize theta
-            self.theta = math.atan2(math.sin(self.theta), math.cos(self.theta))
-
-            # Calculate velocities
-            vx = d_x / dt
-            vy = d_y / dt
-            omega = d_theta / dt
-
-            # Publish odometry
-            self.publish_odometry(current_time, vx, vy, omega)
-
-            # Publish joint states
-            self.publish_joint_states(current_time, positions, wheel_angular_displacements)
-
-            # Update state
+        # Initialize on first read
+        if None in self.last_encoder_positions:
             self.last_encoder_positions = positions
             self.last_time = current_time
+            return
 
-        except Exception as e:
-            self.get_logger().error(f'Odometry update failed: {e}')
+        # Calculate time delta
+        dt = (current_time - self.last_time).nanoseconds / 1e9
+        if dt <= 0:
+            return
+
+        # Calculate encoder deltas (handle wraparound)
+        deltas = []
+        for i in range(3):
+            delta = positions[i] - self.last_encoder_positions[i]
+
+            # Handle wraparound
+            if delta > self.encoder_resolution / 2:
+                delta -= self.encoder_resolution
+            elif delta < -self.encoder_resolution / 2:
+                delta += self.encoder_resolution
+
+            deltas.append(delta)
+
+        # Convert encoder ticks to radians
+        wheel_angular_displacements = [
+            (delta / self.encoder_resolution) * 2 * math.pi
+            for delta in deltas
+        ]
+
+        # Convert to linear wheel displacements
+        wheel_linear_displacements = [
+            displacement * self.wheel_radius
+            for displacement in wheel_angular_displacements
+        ]
+
+        # Kiwi drive forward kinematics
+        # Convert wheel displacements to robot displacement
+        # Inverse of: wheel = (-vx*sin(theta) + vy*cos(theta) + omega*R) / r
+
+        d_front = wheel_linear_displacements[0]
+        d_left = wheel_linear_displacements[1]
+        d_right = wheel_linear_displacements[2]
+
+        # Solve for vx, vy, omega
+        # Using least squares solution for overdetermined system
+        # This is a simplified version - you may want to tune this
+
+        d_x = -d_front / 2 + d_left / 2 + d_right / 2
+        d_y = d_front - d_left / 2 - d_right / 2
+        d_theta = (d_front + d_left + d_right) / (3 * self.robot_radius)
+
+        # Update pose (dead reckoning)
+        delta_x = d_x * math.cos(self.theta) - d_y * math.sin(self.theta)
+        delta_y = d_x * math.sin(self.theta) + d_y * math.cos(self.theta)
+
+        self.x += delta_x
+        self.y += delta_y
+        self.theta += d_theta
+
+        # Normalize theta
+        self.theta = math.atan2(math.sin(self.theta), math.cos(self.theta))
+
+        # Calculate velocities
+        vx = d_x / dt
+        vy = d_y / dt
+        omega = d_theta / dt
+
+        # Publish odometry
+        self.publish_odometry(current_time, vx, vy, omega)
+
+        # Publish joint states
+        self.publish_joint_states(current_time, positions, wheel_angular_displacements)
+
+        # Update state
+        self.last_encoder_positions = positions
+        self.last_time = current_time
+
+        # except Exception as e:
+            # self.get_logger().error('Odometry update failed %s', e)
 
     def publish_odometry(self, current_time, vx: float, vy: float, omega: float):
         """Publish odometry message"""
