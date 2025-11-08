@@ -36,7 +36,7 @@ def generate_launch_description():
     # Launch arguments
     camera_type_arg = DeclareLaunchArgument(
         'camera_type',
-        default_value='csi',
+        default_value='usb',
         description='Camera type: csi or usb'
     )
 
@@ -54,7 +54,7 @@ def generate_launch_description():
 
     enable_color_tracking_arg = DeclareLaunchArgument(
         'enable_color_tracking',
-        default_value='true',
+        default_value='false',
         description='Enable color-based person re-identification'
     )
 
@@ -79,6 +79,7 @@ def generate_launch_description():
         launch_arguments={
             'camera_type': LaunchConfiguration('camera_type'),
             'device_id': LaunchConfiguration('device_id'),
+            'enable_distortion_correction': 'false',  # Disabled for OV9281 (148° FOV, minimal distortion)
             'run_detector': 'true',
             'publish_annotated_image': 'true',  # Enable bounding box visualization
         }.items()
