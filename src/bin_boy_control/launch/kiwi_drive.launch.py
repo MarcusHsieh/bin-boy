@@ -28,7 +28,7 @@ def generate_launch_description():
                 'serial_port': LaunchConfiguration('serial_port'),
                 'baudrate': LaunchConfiguration('baudrate'),
                 'wheel_ids': [1, 2, 3],
-                'wheel_radius': 0.07,
+                'wheel_radius': 0.113,  # Calibrated: was 0.07, adjusted by factor 1.6155 (1m actual / 0.619m odom)
                 'robot_radius': 0.15,
                 'publish_rate': 50.0,
                 'publish_tf': True,

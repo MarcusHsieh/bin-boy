@@ -414,7 +414,7 @@ class KiwiDriveController:
         import math
 
         # Wheel radius and robot radius - ACTUAL ROBOT MEASUREMENTS
-        WHEEL_RADIUS = 0.0725  # meters (145mm diameter wheels)
+        WHEEL_RADIUS = 0.1130  # meters - CALIBRATED (was 0.0700 before odometry calibration)
         ROBOT_RADIUS = 0.1815  # meters (wheels outside body: 157.5mm + 19mm + 5mm)
 
         # Kiwi drive inverse kinematics
@@ -433,7 +433,7 @@ class KiwiDriveController:
         # Convert from rad/s to servo speed units
         # STS3215: 1 speed unit ≈ 0.732 RPM (approximate)
         # TODO: Calibrate this conversion factor
-        SPEED_FACTOR = 50  # Tuning parameter
+        SPEED_FACTOR = 16000  # Tuning parameter
 
         speeds = [
             int(wheel_0 * SPEED_FACTOR),

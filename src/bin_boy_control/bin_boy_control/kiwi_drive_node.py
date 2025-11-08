@@ -153,19 +153,29 @@ class KiwiDriveNode(Node):
 
         # Kiwi drive forward kinematics
         # Convert wheel displacements to robot displacement
-        # Inverse of: wheel = (-vx*sin(theta) + vy*cos(theta) + omega*R) / r
+        # Wheel layout: [Front Left at 300°, Rear at 180°, Front Right at 60°]
+        # Inverse kinematics: wheel = (vx*sin(theta) + vy*cos(theta) + omega*R) / r
 
-        d_front = wheel_linear_displacements[0]
-        d_left = wheel_linear_displacements[1]
-        d_right = wheel_linear_displacements[2]
+        d_0 = wheel_linear_displacements[0]  # Front Left (300°)
+        d_1 = wheel_linear_displacements[1]  # Rear (180°)
+        d_2 = wheel_linear_displacements[2]  # Front Right (60°)
 
-        # Solve for vx, vy, omega
-        # Using least squares solution for overdetermined system
-        # This is a simplified version - you may want to tune this
+        # Forward kinematics - solve for robot velocities from wheel displacements
+        # Using Moore-Penrose pseudoinverse for overdetermined system
+        # Based on angles: 300° (5π/3), 180° (π), 60° (π/3)
 
-        d_x = -d_front / 2 + d_left / 2 + d_right / 2
-        d_y = d_front - d_left / 2 - d_right / 2
-        d_theta = (d_front + d_left + d_right) / (3 * self.robot_radius)
+        sin_300 = math.sin(5*math.pi/3)  # -0.866
+        cos_300 = math.cos(5*math.pi/3)  #  0.5
+        sin_180 = math.sin(math.pi)      #  0.0
+        cos_180 = math.cos(math.pi)      # -1.0
+        sin_60 = math.sin(math.pi/3)     #  0.866
+        cos_60 = math.cos(math.pi/3)     #  0.5
+
+        # Solve: d_wheel = vx*sin(theta) + vy*cos(theta) + omega*R
+        # For 3 wheels, use least squares solution
+        d_x = (d_0 * sin_300 + d_1 * sin_180 + d_2 * sin_60) / 3
+        d_y = (d_0 * cos_300 + d_1 * cos_180 + d_2 * cos_60) / 3
+        d_theta = (d_0 + d_1 + d_2) / (3 * self.robot_radius)
 
         # Update pose (dead reckoning)
         delta_x = d_x * math.cos(self.theta) - d_y * math.sin(self.theta)

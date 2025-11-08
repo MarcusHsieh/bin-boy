@@ -19,7 +19,7 @@ print("Controllers initialized")
 
 # Test forward motion
 print("\nMoving forward for 1 second...")
-controller.set_velocity(vx=0, vy=0, omega=-200)
+controller.set_velocity(vx=0, vy=0, omega=200)
 time.sleep(5)
 
 # Stop
