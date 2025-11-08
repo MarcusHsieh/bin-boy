@@ -40,9 +40,10 @@ def launch_setup(context, *args, **kwargs):
         ])
     # Add USB-specific parameters if using USB camera
     elif camera_type == 'usb':
-        camera_node_params.append(
-            {'device_id': int(LaunchConfiguration('device_id').perform(context))}
-        )
+        camera_node_params.extend([
+            {'device_id': int(LaunchConfiguration('device_id').perform(context))},
+            {'enable_distortion_correction': LaunchConfiguration('enable_distortion_correction').perform(context).lower() == 'true'}
+        ])
 
     # Unified camera node (supports both CSI and USB)
     composable_nodes = [

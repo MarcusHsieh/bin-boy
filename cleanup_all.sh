@@ -47,9 +47,9 @@ REMAINING=$(ps aux | grep -E "ros2|gazebo|rviz|nav2|amcl|slam" | grep -v grep | 
 
 echo "=========================================="
 if [ "$REMAINING" -eq 0 ]; then
-    echo "? All processes cleaned successfully"
+    echo "✓ All processes cleaned successfully"
 else
-    echo "? Warning: $REMAINING processes still running"
+    echo "⚠ Warning: $REMAINING processes still running"
     echo "Remaining processes:"
     ps aux | grep -E "ros2|gazebo|rviz|nav2|amcl|slam" | grep -v grep | grep -v cleanup_all
 fi

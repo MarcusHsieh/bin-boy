@@ -1,0 +1,49 @@
+# Costmap Common Parameters
+# Shared configuration for both local and global costmaps
+
+costmap_common_params:
+  footprint_padding: 0.01
+
+  # Robot footprint - circular for kiwi drive
+  # Physical radius: 0.1575m, using 0.20m for safety margin
+  robot_radius: 0.20
+
+  # Alternative: polygonal footprint for tighter navigation
+  # footprint: "[[0.16, 0.16], [-0.16, 0.16], [-0.16, -0.16], [0.16, -0.16]]"
+
+  # Transform tolerance
+  transform_tolerance: 0.3
+
+  # Obstacle layer parameters
+  obstacle_layer:
+    enabled: true
+    obstacle_range: 5.0      # Detect obstacles within 5m
+    raytrace_range: 6.0      # Clear space up to 6m
+    max_obstacle_height: 2.0  # Maximum height to consider (meters)
+    min_obstacle_height: 0.0  # Minimum height to consider
+    inflation_radius: 0.3    # Safety distance around obstacles
+    cost_scaling_factor: 3.0 # Exponential cost decay rate
+
+    # Obstacle marking/clearing
+    mark_threshold: 0        # Minimum cost to mark as obstacle
+    clear_threshold: 0       # Maximum cost to clear
+    track_unknown_space: true
+    use_maximum: false
+
+    # Combination method for multiple sources
+    combination_method: 1    # 1 = maximum
+
+  # Inflation layer parameters
+  inflation_layer:
+    enabled: true
+    inflation_radius: 0.35   # Inflation around marked obstacles
+    cost_scaling_factor: 3.0 # How rapidly cost falls off
+
+  # Static layer (only for global costmap)
+  static_layer:
+    enabled: true
+    map_topic: /map
+    subscribe_to_updates: true
+
+  # Always send full costmap (not recommended in production, useful for debugging)
+  always_send_full_costmap: false
