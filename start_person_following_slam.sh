@@ -28,7 +28,7 @@ echo
 # Step 2: Source workspace
 echo "${BLUE}Step 2: Sourcing workspace...${NC}"
 source install/setup.bash
-echo "${GREEN}✓ Workspace sourced${NC}"
+echo "${GREEN}Workspace sourced${NC}"
 echo
 
 # Step 3: Launch Simulation + SLAM in background
@@ -45,7 +45,7 @@ ros2 launch bin_boy_simulation simulation.launch.py \
     > /tmp/slam_simulation.log 2>&1 &
 SIM_PID=$!
 
-echo "${GREEN}✓ Simulation + SLAM launched (PID: $SIM_PID)${NC}"
+echo "${GREEN}Simulation + SLAM launched (PID: $SIM_PID)${NC}"
 echo "  Log: /tmp/slam_simulation.log"
 echo
 
@@ -66,18 +66,18 @@ echo -ne '\n'
 # Verify SLAM is running
 echo "  Verifying SLAM Toolbox..."
 if ros2 node list 2>/dev/null | grep -q "slam_toolbox"; then
-    echo "${GREEN}✓ SLAM Toolbox active${NC}"
+    echo "${GREEN}SLAM Toolbox active${NC}"
 else
-    echo "${RED}⚠ Warning: SLAM Toolbox not detected${NC}"
+    echo "${RED}Warning: SLAM Toolbox not detected${NC}"
     echo "  Check log: /tmp/slam_simulation.log"
 fi
 
 # Verify map frame exists
 echo "  Verifying map frame..."
 if timeout 3 ros2 run tf2_ros tf2_echo map odom >/dev/null 2>&1; then
-    echo "${GREEN}✓ Map frame active (SLAM working)${NC}"
+    echo "${GREEN}Map frame active (SLAM working)${NC}"
 else
-    echo "${YELLOW}⚠ Map frame not yet stable (may still be initializing)${NC}"
+    echo "${YELLOW}Map frame not yet stable (may still be initializing)${NC}"
 fi
 echo
 
@@ -95,7 +95,7 @@ ros2 launch bin_boy_perception sim_person_tracking.launch.py \
     > /tmp/person_following.log 2>&1 &
 TRACKING_PID=$!
 
-echo "${GREEN}✓ Person tracking launched (PID: $TRACKING_PID)${NC}"
+echo "${GREEN}Person tracking launched (PID: $TRACKING_PID)${NC}"
 echo "  Log: /tmp/person_following.log"
 echo
 
@@ -107,23 +107,23 @@ sleep 8
 echo "  Verifying Nav2 stack..."
 NAV2_NODES=$(ros2 node list 2>/dev/null | grep -E "controller_server|planner_server|bt_navigator" | wc -l)
 if [ "$NAV2_NODES" -ge 3 ]; then
-    echo "${GREEN}✓ Nav2 stack active ($NAV2_NODES/3 core nodes)${NC}"
+    echo "${GREEN}Nav2 stack active ($NAV2_NODES/3 core nodes)${NC}"
 else
-    echo "${YELLOW}⚠ Warning: Nav2 may not be fully initialized ($NAV2_NODES/3 nodes)${NC}"
+    echo "${YELLOW}Warning: Nav2 may not be fully initialized ($NAV2_NODES/3 nodes)${NC}"
 fi
 echo
 
 # Step 7: System Status
 echo "=========================================="
-echo "${GREEN}✓ ALL SYSTEMS OPERATIONAL${NC}"
+echo "${GREEN}ALL SYSTEMS OPERATIONAL${NC}"
 echo "=========================================="
 echo
 echo "${BLUE}System Components:${NC}"
-echo "  ✓ Gazebo Simulation"
-echo "  ✓ RViz Visualization"
-echo "  ✓ SLAM Toolbox (dynamic mapping)"
-echo "  ✓ Person Tracker"
-echo "  ✓ Nav2 Navigation"
+echo "  Gazebo Simulation"
+echo "  RViz Visualization"
+echo "  SLAM Toolbox (dynamic mapping)"
+echo "  Person Tracker"
+echo "  Nav2 Navigation"
 echo
 echo "${BLUE}How It Works:${NC}"
 echo "  1. SLAM builds a dynamic map of the environment"

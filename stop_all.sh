@@ -20,7 +20,7 @@ if pgrep -f ros2 > /dev/null || pgrep -f gazebo > /dev/null || pgrep -f rviz2 > 
 fi
 
 if pgrep -f ros2 > /dev/null || pgrep -f gazebo > /dev/null || pgrep -f rviz2 > /dev/null; then
-    echo "⚠ Forcefully killing remaining processes..."
+    echo "Forcefully killing remaining processes..."
     pkill -9 -f ros2
     pkill -9 -f gazebo
     pkill -9 -f rviz2
@@ -28,5 +28,5 @@ if pgrep -f ros2 > /dev/null || pgrep -f gazebo > /dev/null || pgrep -f rviz2 > 
 fi
 
 echo ""
-echo "✓ All processes stopped"
+echo "All processes stopped"
 echo ""

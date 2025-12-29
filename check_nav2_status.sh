@@ -53,7 +53,7 @@ ros2 topic info /cmd_vel | grep "Publisher count" | grep -q "1 " && echo "✓ Si
 echo ""
 if [ "$all_active" = true ]; then
     echo "========================================"
-    echo "  ✓ Nav2 READY FOR NAVIGATION"
+    echo "  Nav2 READY FOR NAVIGATION"
     echo "========================================"
     echo ""
     echo "Send navigation goals using:"
@@ -61,7 +61,7 @@ if [ "$all_active" = true ]; then
     echo "  - CLI: ros2 action send_goal /navigate_to_pose ..."
 else
     echo "========================================"
-    echo "  ⚠ Nav2 NOT READY"
+    echo "  Nav2 NOT READY"
     echo "========================================"
     echo ""
     echo "If nodes are INACTIVE, wait 15 seconds after launch"

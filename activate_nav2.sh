@@ -15,7 +15,7 @@ activate_node() {
     echo "Activating $node..."
     ros2 lifecycle set $node configure 2>&1 | grep -q "Transitioning successful" && \
     ros2 lifecycle set $node activate 2>&1 | grep -q "Transitioning successful" && \
-    echo "  ✓ $node activated" || echo "  ✗ $node activation failed"
+    echo "  $node activated" || echo "  ✗ $node activation failed"
 }
 
 activate_node "/controller_server"
