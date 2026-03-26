@@ -1,0 +1,18 @@
+#!/bin/bash
+# Wrapper script for ros2 run compatibility
+# This script is installed in lib/camera_cpp/
+# The .py file is in share/camera_cpp/scripts/
+
+# Get the install prefix (e.g., /home/jetson/bin-boy/install/camera_cpp)
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+INSTALL_PREFIX="$(cd "${SCRIPT_DIR}/../.." && pwd)"
+
+# Path to the actual Python script
+PYTHON_SCRIPT="${INSTALL_PREFIX}/share/camera_cpp/scripts/calibrate_distortion.py"
+
+if [ ! -f "${PYTHON_SCRIPT}" ]; then
+    echo "Error: Cannot find ${PYTHON_SCRIPT}"
+    exit 1
+fi
+
+exec python3 "${PYTHON_SCRIPT}" "$@"

@@ -1,0 +1,194 @@
+Panels:
+  - Class: rviz_common/Displays
+    Name: Displays
+  - Class: rviz_common/Views
+    Name: Views
+  - Class: rviz_common/Tool Properties
+    Name: Tool Properties
+
+Visualization Manager:
+  Displays:
+    # Grid
+    - Class: rviz_default_plugins/Grid
+      Name: Grid
+      Reference Frame: base_footprint
+      Plane Cell Count: 20
+      Cell Size: 0.5
+      Color: 160; 160; 164
+      Alpha: 0.5
+      Enabled: true
+
+    # TF Transforms
+    - Class: rviz_default_plugins/TF
+      Name: TF
+      Marker Scale: 0.3
+      Show Arrows: true
+      Show Axes: true
+      Show Names: true
+      Update Interval: 0.0
+      Frame Timeout: 15.0
+      Enabled: true
+
+    # Robot Model
+    - Class: rviz_default_plugins/RobotModel
+      Name: RobotModel
+      Description Topic: /robot_description
+      Visual Enabled: true
+      Collision Enabled: false
+      Alpha: 1.0
+      Enabled: true
+
+    # IMU Data Visualization
+    - Class: rviz_imu_plugin/Imu
+      Name: IMU
+      Topic: /imu/data_raw
+      History Length: 1
+      Enabled: true
+      Alpha: 1.0
+      Box Alpha: 1.0
+      Box Color: 125; 125; 125
+      Acceleration Arrow Color: 255; 0; 0
+      Acceleration Arrow Scale: 2.0
+      Acceleration Arrow Alpha: 1.0
+      Show Acceleration: true
+      Show Acceleration Dots: false
+      Acceleration Dots Alpha: 1.0
+      Acceleration Dots Scale: 0.01
+      Show Angular Velocity: true
+      Angular Velocity Arrow Color: 0; 255; 0
+      Angular Velocity Arrow Scale: 2.0
+      Angular Velocity Arrow Alpha: 1.0
+
+    # Odometry (raw from wheels)
+    - Class: rviz_default_plugins/Odometry
+      Name: Wheel Odometry
+      Topic: /odom
+      Position Tolerance: 0.1
+      Angle Tolerance: 0.1
+      Keep: 100
+      Shape:
+        Alpha: 1.0
+        Axes Length: 0.3
+        Axes Radius: 0.03
+        Color: 255; 25; 0
+        Head Length: 0.3
+        Head Radius: 0.1
+        Shaft Length: 1.0
+        Shaft Radius: 0.05
+        Value: Arrow
+      Covariance:
+        Orientation:
+          Alpha: 0.5
+          Color: 255; 255; 127
+          Color Style: Unique
+          Frame: Local
+          Offset: 1.0
+          Scale: 1.0
+          Value: true
+        Position:
+          Alpha: 0.3
+          Color: 204; 51; 204
+          Scale: 1.0
+          Value: true
+      Enabled: true
+
+    # Filtered Odometry (EKF output)
+    - Class: rviz_default_plugins/Odometry
+      Name: Filtered Odometry (EKF)
+      Topic: /odom_filtered
+      Position Tolerance: 0.1
+      Angle Tolerance: 0.1
+      Keep: 100
+      Shape:
+        Alpha: 1.0
+        Axes Length: 0.3
+        Axes Radius: 0.03
+        Color: 0; 255; 0
+        Head Length: 0.3
+        Head Radius: 0.1
+        Shaft Length: 1.0
+        Shaft Radius: 0.05
+        Value: Arrow
+      Covariance:
+        Orientation:
+          Alpha: 0.5
+          Color: 127; 255; 127
+          Color Style: Unique
+          Frame: Local
+          Offset: 1.0
+          Scale: 1.0
+          Value: true
+        Position:
+          Alpha: 0.3
+          Color: 51; 204; 51
+          Scale: 1.0
+          Value: true
+      Enabled: true
+
+    # Path visualization for filtered odometry
+    - Class: rviz_default_plugins/Path
+      Name: Robot Path
+      Topic: /odom_filtered
+      Alpha: 1.0
+      Buffer Length: 1
+      Color: 25; 255; 0
+      Enabled: true
+      Head Diameter: 0.3
+      Head Length: 0.2
+      Length: 0.3
+      Line Style: Lines
+      Line Width: 0.03
+      Offset:
+        X: 0.0
+        Y: 0.0
+        Z: 0.0
+      Pose Color: 255; 85; 255
+      Pose Style: None
+      Radius: 0.03
+      Shaft Diameter: 0.1
+      Shaft Length: 0.1
+
+  Global Options:
+    Background Color: 48; 48; 48
+    Fixed Frame: odom
+    Frame Rate: 30
+
+  Tools:
+    - Class: rviz_default_plugins/MoveCamera
+    - Class: rviz_default_plugins/Select
+    - Class: rviz_default_plugins/FocusCamera
+    - Class: rviz_default_plugins/Measure
+      Line color: 128; 128; 0
+
+  Views:
+    Current:
+      Class: rviz_default_plugins/Orbit
+      Distance: 3.0
+      Enable Stereo Rendering:
+        Stereo Eye Separation: 0.06
+        Stereo Focal Distance: 1.0
+        Swap Stereo Eyes: false
+        Value: false
+      Focal Point:
+        X: 0.0
+        Y: 0.0
+        Z: 0.5
+      Focal Shape Fixed Size: true
+      Focal Shape Size: 0.05
+      Invert Z Axis: false
+      Name: Current View
+      Near Clip Distance: 0.01
+      Pitch: 0.785398
+      Target Frame: base_link
+      Yaw: 0.785398
+    Saved: ~
+
+Window Geometry:
+  Displays:
+    collapsed: false
+  Height: 1016
+  Width: 1920
+  Views:
+    collapsed: false
+  Tool Properties:
+    collapsed: false

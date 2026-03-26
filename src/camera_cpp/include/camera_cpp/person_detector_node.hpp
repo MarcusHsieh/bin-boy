@@ -1,0 +1,55 @@
+#ifndef CAMERA_CPP__PERSON_DETECTOR_NODE_HPP_
+#define CAMERA_CPP__PERSON_DETECTOR_NODE_HPP_
+
+#include <rclcpp/rclcpp.hpp>
+#include <sensor_msgs/msg/image.hpp>
+#include <vision_msgs/msg/detection2_d_array.hpp>
+#include <bin_boy_interfaces/msg/camera_performance.hpp>
+#include <cv_bridge/cv_bridge.h>
+#include <opencv2/imgproc.hpp>
+#include "camera_cpp/tensorrt_inference.hpp"
+#include <memory>
+#include <string>
+#include <vector>
+
+namespace camera_cpp
+{
+
+class PersonDetectorNode : public rclcpp::Node
+{
+public:
+    explicit PersonDetectorNode(const rclcpp::NodeOptions & options);
+    virtual ~PersonDetectorNode() = default;
+
+private:
+    // ROS
+    rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr subscription_;
+    rclcpp::Publisher<vision_msgs::msg::Detection2DArray>::SharedPtr detection_pub_;
+    rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr image_pub_;
+    rclcpp::Publisher<bin_boy_interfaces::msg::CameraPerformance>::SharedPtr performance_pub_;
+
+    // TensorRT inference engine
+    std::unique_ptr<TensorRTInference> trt_inference_;
+    float confidence_threshold_ = 0.5;  // Made configurable (not const)
+    const int person_class_id_ = 0; // person class in COCO (YOLO uses 0, MobileNet-SSD uses 15)
+
+    // parameters
+    std::string model_engine_path_;
+    std::string model_onnx_path_;
+    bool use_tensorrt_;
+    bool publish_annotated_image_;
+    int detection_frame_skip_;
+    bool debug_logging_;
+
+    // internal state
+    size_t frame_counter_ = 0;
+
+    void declare_parameters();
+    void load_parameters();
+    void load_model();
+    void image_callback(sensor_msgs::msg::Image::UniquePtr msg);
+};
+
+} // namespace camera_cpp
+
+#endif // CAMERA_CPP__PERSON_DETECTOR_NODE_HPP_

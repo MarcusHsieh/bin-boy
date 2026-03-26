@@ -1,0 +1,18 @@
+# Laser scan filter configuration to mask robot support pillar reflections
+# This filters out ALL points within 150mm radius from base_laser (360 degrees)
+#
+# WHY RANGE FILTERING IS BETTER:
+# - Simpler: Single parameter instead of multiple angle ranges
+# - Robust: Works regardless of pillar positions or robot orientation
+# - Complete: Masks all support structures automatically
+# - Maintainable: No need to recalibrate if robot structure changes
+
+scan_filter_chain:
+  - name: minimum_range_filter
+    type: laser_filters/LaserScanRangeFilter
+    params:
+      use_message_range_limits: false
+      lower_threshold: 0.15  # Minimum valid range: 150mm (masks support pillars)
+      upper_threshold: 8.00  # Maximum valid range: 8m (LiDAR spec)
+      lower_replacement_value: .nan  # Replace filtered points with NaN
+      upper_replacement_value: .nan
